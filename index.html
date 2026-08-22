@@ -62,7 +62,6 @@ const TEAMS_SEED = [
 
 // ============================================================
 // CLASSIFICAÇÃO BASE — após rodada 23 (congelada)
-// Daqui pra frente só somam as rodadas 24–38 do Firebase
 // ============================================================
 const BASE_R23 = {
   "Não Ynteressa FC": { pts: 47, j: 23, v: 14, e: 5, d: 4, rv: 0 },
@@ -87,9 +86,8 @@ const BASE_R23 = {
   "SilvanoLBraga FC": { pts: 12, j: 23, v: 4, e: 0, d: 19, rv: 2 },
 };
 
-
 // ============================================================
-// CONFRONTOS RODADAS 23 a 38 (mapeadas como rodada 23..38)
+// CONFRONTOS RODADAS 23 a 38
 // ============================================================
 const FIXTURES_R23_A_R38 = {
   23: [
@@ -350,7 +348,7 @@ function pontosDoTime(pontuacoes, rodada, teamId) {
 }
 
 function rodadaMaisRecenteComDados(pontuacoes) {
-  let max = 0;
+  let max = 24; // Padrão mínimo na fase nova
   Object.keys(pontuacoes || {}).forEach((r) => {
     const rodada = Number(r);
     const temAlgo = Object.values(pontuacoes[r] || {}).some((v) => v !== null && v !== undefined);
@@ -412,7 +410,10 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
+  
+  // Abre direto na rodada mais recente com dados ou trava na 24 vigente
   const [rodadaSel, setRodadaSel] = useState(24);
+  
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -432,8 +433,10 @@ function App() {
         }
         setPontuacoes(pts);
         setConnStatus("ok");
+        
+        // Atualiza a rodada selecionada para a mais recente ativa ao carregar
         const maxR = rodadaMaisRecenteComDados(pts);
-        if (maxR >= 24) setRodadaSel(maxR); else setRodadaSel(24);
+        setRodadaSel(maxR >= 24 ? maxR : 24);
       } catch (e) {
         if (!cancelled) setConnStatus("error");
       }
