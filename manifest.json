@@ -1,0 +1,16 @@
+{
+  "name": "Liga Cartoleiro 3 Pontos 2026",
+  "short_name": "Liga 3 Pontos",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "logo-liga-3-pontos.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
