@@ -348,7 +348,7 @@ function pontosDoTime(pontuacoes, rodada, teamId) {
 }
 
 function rodadaMaisRecenteComDados(pontuacoes) {
-  let max = 24; // Padrão mínimo na fase nova
+  let max = 24;
   Object.keys(pontuacoes || {}).forEach((r) => {
     const rodada = Number(r);
     const temAlgo = Object.values(pontuacoes[r] || {}).some((v) => v !== null && v !== undefined);
@@ -410,10 +410,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
-  
-  // Abre direto na rodada mais recente com dados ou trava na 24 vigente
   const [rodadaSel, setRodadaSel] = useState(24);
-  
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -433,8 +430,6 @@ function App() {
         }
         setPontuacoes(pts);
         setConnStatus("ok");
-        
-        // Atualiza a rodada selecionada para a mais recente ativa ao carregar
         const maxR = rodadaMaisRecenteComDados(pts);
         setRodadaSel(maxR >= 24 ? maxR : 24);
       } catch (e) {
@@ -456,6 +451,18 @@ function App() {
   }, [secret, pontuacoes]);
 
   const classGeral = useMemo(() => (data ? calcularClassificacao(data.teams, data.fixtures, pontuacoes, data.config) : []), [data, pontuacoes]);
+
+  // Calcula as posições da rodada anterior para gerar as setas de sobe/desce
+  const posicoesAnteriores = useMemo(() => {
+    if (!data) return {};
+    const rodadaAtual = rodadaMaisRecenteComDados(pontuacoes);
+    // Se estivermos na R24, a "rodada anterior" é a base R23 pura
+    const limiteAnterior = rodadaAtual <= 24 ? 23 : rodadaAtual - 1;
+    const classAnterior = calcularClassificacao(data.teams, data.fixtures, pontuacoes, data.config, limiteAnterior);
+    const mapa = {};
+    classAnterior.forEach((t, i) => { mapa[t.id] = i + 1; });
+    return mapa;
+  }, [data, pontuacoes]);
 
   const unlockAdmin = () => {
     if (pinInput === (data?.config?.pin || "liga3pontos")) {
@@ -508,7 +515,7 @@ function App() {
     ),
 
     React.createElement("main", { className: "max-w-3xl mx-auto px-4 py-4" },
-      tab === "classificacao" && React.createElement(ClassTable, { rows: classGeral }),
+      tab === "classificacao" && React.createElement(ClassTable, { rows: classGeral, posicoesAnteriores }),
 
       tab === "confrontos" && React.createElement("div", null,
         React.createElement("div", { className: "flex gap-1 overflow-x-auto mb-4 pb-1" },
@@ -547,13 +554,21 @@ function App() {
   );
 }
 
-function ClassTable({ rows }) {
+function TrendArrow({ delta }) {
+  if (delta === null || delta === undefined) return React.createElement("span", { className: "text-slate-600 text-xs" }, "•");
+  if (delta === 0) return React.createElement("span", { className: "text-slate-500 text-xs" }, "•");
+  if (delta > 0) return React.createElement("span", { className: "text-emerald-400 text-xs font-bold" }, `▲${delta}`);
+  return React.createElement("span", { className: "text-red-400 text-xs font-bold" }, `▼${Math.abs(delta)}`);
+}
+
+function ClassTable({ rows, posicoesAnteriores }) {
   if (!rows.length) return React.createElement("div", { className: "text-center text-slate-400 py-10 text-sm" }, "Sem dados ainda. Aguarde as pontuações.");
   return React.createElement("div", { className: "overflow-x-auto rounded-lg border border-slate-700" },
     React.createElement("table", { className: "w-full text-xs sm:text-sm" },
       React.createElement("thead", null,
         React.createElement("tr", { className: "bg-slate-800 text-slate-400 uppercase text-xs tracking-wider" },
           React.createElement("th", { className: "px-2 py-2 text-left w-8" }, "#"),
+          React.createElement("th", { className: "px-1 py-2 text-center w-8" }, ""),
           React.createElement("th", { className: "px-2 py-2 text-left" }, "Time"),
           React.createElement("th", { className: "px-2 py-2 text-center" }, "J"),
           React.createElement("th", { className: "px-2 py-2 text-center" }, "V"),
@@ -564,19 +579,24 @@ function ClassTable({ rows }) {
         )
       ),
       React.createElement("tbody", { className: "font-mono tabular-nums" },
-        rows.map((t, i) => React.createElement("tr", {
-          key: t.id,
-          className: `border-t border-slate-700 ${i % 2 === 0 ? "bg-slate-900" : "bg-slate-950"} ${i < 4 ? "border-l-2 border-l-lime-400" : i >= 16 ? "border-l-2 border-l-red-500" : ""}`
-        },
-          React.createElement("td", { className: "px-2 py-2 text-slate-400 font-sans" }, i + 1),
-          React.createElement("td", { className: "px-2 py-2 font-sans font-semibold leading-tight" }, t.nome),
-          React.createElement("td", { className: "px-2 py-2 text-center" }, t.j),
-          React.createElement("td", { className: "px-2 py-2 text-center text-emerald-400" }, t.v),
-          React.createElement("td", { className: "px-2 py-2 text-center text-slate-400" }, t.e),
-          React.createElement("td", { className: "px-2 py-2 text-center text-red-400" }, t.d),
-          React.createElement("td", { className: "px-2 py-2 text-center text-amber-400" }, t.rv),
-          React.createElement("td", { className: "px-2 py-2 text-center font-black text-lime-400" }, t.pts)
-        ))
+        rows.map((t, i) => {
+          const posAnterior = posicoesAnteriores ? posicoesAnteriores[t.id] : undefined;
+          const delta = posAnterior !== undefined ? posAnterior - (i + 1) : null;
+          return React.createElement("tr", {
+            key: t.id,
+            className: `border-t border-slate-700 ${i % 2 === 0 ? "bg-slate-900" : "bg-slate-950"} ${i < 4 ? "border-l-2 border-l-lime-400" : i >= 16 ? "border-l-2 border-l-red-500" : ""}`
+          },
+            React.createElement("td", { className: "px-2 py-2 text-slate-400 font-sans" }, i + 1),
+            React.createElement("td", { className: "px-1 py-2 text-center" }, React.createElement(TrendArrow, { delta })),
+            React.createElement("td", { className: "px-2 py-2 font-sans font-semibold leading-tight" }, t.nome),
+            React.createElement("td", { className: "px-2 py-2 text-center" }, t.j),
+            React.createElement("td", { className: "px-2 py-2 text-center text-emerald-400" }, t.v),
+            React.createElement("td", { className: "px-2 py-2 text-center text-slate-400" }, t.e),
+            React.createElement("td", { className: "px-2 py-2 text-center text-red-400" }, t.d),
+            React.createElement("td", { className: "px-2 py-2 text-center text-amber-400" }, t.rv),
+            React.createElement("td", { className: "px-2 py-2 text-center font-black text-lime-400" }, t.pts)
+          );
+        })
       )
     )
   );
