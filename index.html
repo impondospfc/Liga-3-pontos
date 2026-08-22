@@ -289,7 +289,7 @@ const FIXTURES_R23_A_R38 = {
 const DEFAULT_CONFIG = {
   nomeLiga: "Liga Cartoleiro 3 Pontos 2026",
   numGrupos: 1,
-  numRodadas: 16, // 23 a 38
+  numRodadas: 16,
   rodadaInicial: 23,
   margemEmpate: 3,
   byeCount: 0,
@@ -370,7 +370,6 @@ function calcularClassificacao(teams, fixtures, pontuacoes, config, ateRodada) {
       gp: 0, gc: 0, sg: 0, pts: base.pts, rv: base.rv
     };
   });
-  // Só conta rodadas 24+ (23 já está na base)
   fixtures.forEach((f) => {
     if (f.rodada < 24) return;
     if (f.rodada > limite) return;
@@ -428,7 +427,6 @@ function App() {
         if (liga && liga.config) {
           setData(liga);
         } else {
-          // seed inicial
           const seed = defaultData();
           setData(seed);
         }
@@ -444,12 +442,6 @@ function App() {
     const interval = setInterval(load, 12000);
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
-
-  const persist = useCallback(async (next) => {
-    setData(next);
-    if (!secret) { showToast("Configure o segredo de admin"); return; }
-    try { await fbPut("liga", secret, next); } catch (e) { showToast("Erro ao salvar"); }
-  }, [secret]);
 
   const setPontuacaoTime = useCallback(async (rodada, teamId, val) => {
     const v = val === "" ? null : Number(val);
@@ -494,7 +486,6 @@ function App() {
   const rodadas = Array.from({ length: 16 }, (_, i) => 23 + i);
 
   return React.createElement("div", { className: "min-h-screen bg-slate-950 text-slate-50" },
-    // Header
     React.createElement("header", { className: "sticky top-0 z-20 bg-slate-950/95 border-b border-slate-800 backdrop-blur" },
       React.createElement("div", { className: "max-w-3xl mx-auto px-4 py-3 flex items-center gap-3" },
         React.createElement("img", { src: "logo-liga-3-pontos.png", alt: "Logo", className: "w-10 h-10 object-contain" }),
@@ -513,7 +504,6 @@ function App() {
       )
     ),
 
-    // Content
     React.createElement("main", { className: "max-w-3xl mx-auto px-4 py-4" },
       tab === "classificacao" && React.createElement(ClassTable, { rows: classGeral }),
 
