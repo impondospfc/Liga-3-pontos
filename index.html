@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Liga 3 Pontos" />
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950">
@@ -24,7 +25,7 @@
 
 <script>
 "use strict";
-const { useState, useEffect, useMemo, useCallback } = React;
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 // ============================================================
 // FIREBASE — Liga Cartoleiro 3 Pontos
@@ -64,231 +65,91 @@ const TEAMS_SEED = [
 // CLASSIFICAÇÃO BASE — após rodada 23 (congelada)
 // ============================================================
 const BASE_R23 = {
-  "Não Ynteressa FC": { pts: 47, j: 23, v: 14, e: 5, d: 4, rv: 0 },
-  "Kartólattra SCCP": { pts: 46, j: 23, v: 14, e: 4, d: 5, rv: 4 },
-  "DBMC FC": { pts: 44, j: 23, v: 14, e: 2, d: 7, rv: 2 },
-  "SC Mercenário": { pts: 43, j: 23, v: 14, e: 1, d: 8, rv: 0 },
-  "SimasturboF.C": { pts: 39, j: 23, v: 12, e: 3, d: 8, rv: 3 },
-  "SAF VK Phone": { pts: 37, j: 23, v: 11, e: 4, d: 8, rv: 1 },
-  "1/2 Boca Juniors SPFC": { pts: 36, j: 23, v: 11, e: 3, d: 9, rv: 2 },
-  "Real Mauadri": { pts: 36, j: 23, v: 11, e: 3, d: 9, rv: 0 },
-  "Ayrton Senna Eterno F. C.": { pts: 35, j: 23, v: 11, e: 2, d: 10, rv: 0 },
-  "Ivan Camisa 10": { pts: 34, j: 23, v: 10, e: 4, d: 9, rv: 0 },
-  "Impondo F.C": { pts: 33, j: 23, v: 9, e: 6, d: 8, rv: 1 },
-  "theo bernardes2016sa": { pts: 32, j: 23, v: 10, e: 2, d: 11, rv: 2 },
-  "BarçaSampaSP": { pts: 30, j: 23, v: 9, e: 3, d: 11, rv: 2 },
-  "Doutromundo e-sports": { pts: 29, j: 23, v: 8, e: 5, d: 10, rv: 0 },
-  "FC Speed Galatico": { pts: 28, j: 23, v: 9, e: 1, d: 13, rv: 1 },
-  "Vemkivem": { pts: 26, j: 23, v: 8, e: 2, d: 13, rv: 1 },
-  "Mcdonald Soccer": { pts: 25, j: 23, v: 7, e: 4, d: 12, rv: 1 },
-  "SEP PALMEIRAS 19I4": { pts: 25, j: 23, v: 7, e: 4, d: 12, rv: 0 },
-  "S.E.P ArmageBambi": { pts: 21, j: 23, v: 6, e: 3, d: 14, rv: 0 },
-  "SilvanoLBraga FC": { pts: 12, j: 23, v: 4, e: 0, d: 19, rv: 2 },
+  "Não Ynteressa FC": { pts: 47, j: 23, v: 14, e: 5, d: 4, rv: 0, cartola: 1872.24 },
+  "Kartólattra SCCP": { pts: 46, j: 23, v: 14, e: 4, d: 5, rv: 4, cartola: 1916.59 },
+  "DBMC FC": { pts: 44, j: 23, v: 14, e: 2, d: 7, rv: 2, cartola: 1913.16 },
+  "SC Mercenário": { pts: 43, j: 23, v: 14, e: 1, d: 8, rv: 0, cartola: 1852.15 },
+  "SimasturboF.C": { pts: 39, j: 23, v: 12, e: 3, d: 8, rv: 3, cartola: 1878.64 },
+  "SAF VK Phone": { pts: 37, j: 23, v: 11, e: 4, d: 8, rv: 1, cartola: 1870.08 },
+  "1/2 Boca Juniors SPFC": { pts: 36, j: 23, v: 11, e: 3, d: 9, rv: 2, cartola: 1849.55 },
+  "Real Mauadri": { pts: 36, j: 23, v: 11, e: 3, d: 9, rv: 0, cartola: 1805.94 },
+  "Ayrton Senna Eterno F. C.": { pts: 35, j: 23, v: 11, e: 2, d: 10, rv: 0, cartola: 1807.24 },
+  "Ivan Camisa 10": { pts: 34, j: 23, v: 10, e: 4, d: 9, rv: 0, cartola: 1823.95 },
+  "Impondo F.C": { pts: 33, j: 23, v: 9, e: 6, d: 8, rv: 1, cartola: 1858.06 },
+  "theo bernardes2016sa": { pts: 32, j: 23, v: 10, e: 2, d: 11, rv: 2, cartola: 1799.16 },
+  "BarçaSampaSP": { pts: 30, j: 23, v: 9, e: 3, d: 11, rv: 2, cartola: 1785.18 },
+  "Doutromundo e-sports": { pts: 29, j: 23, v: 8, e: 5, d: 10, rv: 0, cartola: 1787.04 },
+  "FC Speed Galatico": { pts: 28, j: 23, v: 9, e: 1, d: 13, rv: 1, cartola: 1633.85 },
+  "Vemkivem": { pts: 26, j: 23, v: 8, e: 2, d: 13, rv: 1, cartola: 1701.5 },
+  "Mcdonald Soccer": { pts: 25, j: 23, v: 7, e: 4, d: 12, rv: 1, cartola: 1724.38 },
+  "SEP PALMEIRAS 19I4": { pts: 25, j: 23, v: 7, e: 4, d: 12, rv: 0, cartola: 1683.32 },
+  "S.E.P ArmageBambi": { pts: 21, j: 23, v: 6, e: 3, d: 14, rv: 0, cartola: 1602.87 },
+  "SilvanoLBraga FC": { pts: 12, j: 23, v: 4, e: 0, d: 19, rv: 2, cartola: 1285.78 },
 };
 
-// ============================================================
-// CONFRONTOS RODADAS 23 a 38
-// ============================================================
+const MITO_1T = { pontos: 140.76, time: "SimasturboF.C", rodada: 13 };
+const MITO_2T_BASE = { pontos: 129.11, time: "SAF VK Phone", rodada: 20 };
+
+const PONTUACOES_R23 = {
+  "5709128": 70.37, "827179": 74.11, "1064199": 57.85, "2658666": 67.45,
+  "776045": 68.75, "13971687": 68.47, "242815": 72.55, "47922118": 40.67,
+  "3208913": 63.87, "25965847": 76.76, "1023779": 66.55, "4749372": 62.08,
+  "13942933": 70.15, "49806450": 67.17, "179252": 74.91, "18743414": 77.53,
+  "4395287": 55.15, "49413477": 56.33, "47750657": 89.40, "22951194": 65.65,
+};
+
+const FIXTURES_R1_A_R23 = {
+  1: [["theo bernardes2016sa", "Real Mauadri"], ["Ivan Camisa 10", "BarçaSampaSP"], ["SAF VK Phone", "FC Speed Galatico"], ["Vemkivem", "SimasturboF.C"], ["SEP PALMEIRAS 19I4", "Doutromundo e-sports"], ["Mcdonald Soccer", "SC Mercenário"], ["Impondo F.C", "DBMC FC"], ["Não Ynteressa FC", "Kartólattra SCCP"], ["S.E.P ArmageBambi", "1/2 Boca Juniors SPFC"], ["SilvanoLBraga FC", "Ayrton Senna Eterno F. C."]],
+  2: [["FC Speed Galatico", "Impondo F.C"], ["Doutromundo e-sports", "SilvanoLBraga FC"], ["Ayrton Senna Eterno F. C.", "SAF VK Phone"], ["SC Mercenário", "S.E.P ArmageBambi"], ["Kartólattra SCCP", "Mcdonald Soccer"], ["BarçaSampaSP", "Não Ynteressa FC"], ["Real Mauadri", "Ivan Camisa 10"], ["DBMC FC", "Vemkivem"], ["SimasturboF.C", "theo bernardes2016sa"], ["1/2 Boca Juniors SPFC", "SEP PALMEIRAS 19I4"]],
+  3: [["theo bernardes2016sa", "Ivan Camisa 10"], ["Doutromundo e-sports", "SimasturboF.C"], ["SAF VK Phone", "Real Mauadri"], ["Vemkivem", "Kartólattra SCCP"], ["SEP PALMEIRAS 19I4", "BarçaSampaSP"], ["Mcdonald Soccer", "1/2 Boca Juniors SPFC"], ["Impondo F.C", "SC Mercenário"], ["DBMC FC", "Ayrton Senna Eterno F. C."], ["S.E.P ArmageBambi", "FC Speed Galatico"], ["SilvanoLBraga FC", "Não Ynteressa FC"]],
+  4: [["Kartólattra SCCP", "DBMC FC"], ["1/2 Boca Juniors SPFC", "Impondo F.C"], ["BarçaSampaSP", "Vemkivem"], ["Real Mauadri", "Mcdonald Soccer"], ["SC Mercenário", "theo bernardes2016sa"], ["Ayrton Senna Eterno F. C.", "Doutromundo e-sports"], ["Não Ynteressa FC", "SAF VK Phone"], ["SimasturboF.C", "SilvanoLBraga FC"], ["Ivan Camisa 10", "S.E.P ArmageBambi"], ["FC Speed Galatico", "SEP PALMEIRAS 19I4"]],
+  5: [["SEP PALMEIRAS 19I4", "Ayrton Senna Eterno F. C."], ["DBMC FC", "Ivan Camisa 10"], ["Mcdonald Soccer", "Impondo F.C"], ["SimasturboF.C", "S.E.P ArmageBambi"], ["FC Speed Galatico", "BarçaSampaSP"], ["Vemkivem", "Não Ynteressa FC"], ["1/2 Boca Juniors SPFC", "theo bernardes2016sa"], ["Doutromundo e-sports", "SC Mercenário"], ["SAF VK Phone", "SilvanoLBraga FC"], ["Real Mauadri", "Kartólattra SCCP"]],
+  6: [["S.E.P ArmageBambi", "Mcdonald Soccer"], ["Ivan Camisa 10", "FC Speed Galatico"], ["theo bernardes2016sa", "DBMC FC"], ["Ayrton Senna Eterno F. C.", "Vemkivem"], ["Impondo F.C", "SimasturboF.C"], ["SC Mercenário", "SEP PALMEIRAS 19I4"], ["Não Ynteressa FC", "1/2 Boca Juniors SPFC"], ["Kartólattra SCCP", "SAF VK Phone"], ["BarçaSampaSP", "Doutromundo e-sports"], ["SilvanoLBraga FC", "Real Mauadri"]],
+  7: [["SC Mercenário", "Ivan Camisa 10"], ["SimasturboF.C", "Kartólattra SCCP"], ["DBMC FC", "BarçaSampaSP"], ["SEP PALMEIRAS 19I4", "Não Ynteressa FC"], ["Mcdonald Soccer", "SAF VK Phone"], ["Doutromundo e-sports", "theo bernardes2016sa"], ["Ayrton Senna Eterno F. C.", "Impondo F.C"], ["Real Mauadri", "S.E.P ArmageBambi"], ["FC Speed Galatico", "1/2 Boca Juniors SPFC"], ["SilvanoLBraga FC", "Vemkivem"]],
+  8: [["Kartólattra SCCP", "Ivan Camisa 10"], ["theo bernardes2016sa", "Mcdonald Soccer"], ["SAF VK Phone", "SC Mercenário"], ["Doutromundo e-sports", "Real Mauadri"], ["BarçaSampaSP", "Ayrton Senna Eterno F. C."], ["DBMC FC", "Não Ynteressa FC"], ["1/2 Boca Juniors SPFC", "SimasturboF.C"], ["Impondo F.C", "SilvanoLBraga FC"], ["S.E.P ArmageBambi", "SEP PALMEIRAS 19I4"], ["Vemkivem", "FC Speed Galatico"]],
+  9: [["Ivan Camisa 10", "SEP PALMEIRAS 19I4"], ["Impondo F.C", "SAF VK Phone"], ["BarçaSampaSP", "S.E.P ArmageBambi"], ["SimasturboF.C", "DBMC FC"], ["Não Ynteressa FC", "Doutromundo e-sports"], ["theo bernardes2016sa", "Vemkivem"], ["Ayrton Senna Eterno F. C.", "1/2 Boca Juniors SPFC"], ["SilvanoLBraga FC", "Mcdonald Soccer"], ["SC Mercenário", "Real Mauadri"], ["Kartólattra SCCP", "FC Speed Galatico"]],
+  10: [["SAF VK Phone", "BarçaSampaSP"], ["Não Ynteressa FC", "theo bernardes2016sa"], ["Doutromundo e-sports", "Ivan Camisa 10"], ["SilvanoLBraga FC", "S.E.P ArmageBambi"], ["FC Speed Galatico", "Ayrton Senna Eterno F. C."], ["Mcdonald Soccer", "DBMC FC"], ["Vemkivem", "Impondo F.C"], ["SimasturboF.C", "SC Mercenário"], ["SEP PALMEIRAS 19I4", "Kartólattra SCCP"], ["Real Mauadri", "1/2 Boca Juniors SPFC"]],
+  11: [["S.E.P ArmageBambi", "SAF VK Phone"], ["1/2 Boca Juniors SPFC", "Doutromundo e-sports"], ["SEP PALMEIRAS 19I4", "SimasturboF.C"], ["Ayrton Senna Eterno F. C.", "Mcdonald Soccer"], ["Impondo F.C", "Real Mauadri"], ["DBMC FC", "SilvanoLBraga FC"], ["Ivan Camisa 10", "Não Ynteressa FC"], ["theo bernardes2016sa", "FC Speed Galatico"], ["Vemkivem", "SC Mercenário"], ["BarçaSampaSP", "Kartólattra SCCP"]],
+  12: [["Doutromundo e-sports", "SAF VK Phone"], ["SilvanoLBraga FC", "Ivan Camisa 10"], ["S.E.P ArmageBambi", "Vemkivem"], ["BarçaSampaSP", "Real Mauadri"], ["Impondo F.C", "SEP PALMEIRAS 19I4"], ["Ayrton Senna Eterno F. C.", "theo bernardes2016sa"], ["Não Ynteressa FC", "Mcdonald Soccer"], ["SC Mercenário", "DBMC FC"], ["Kartólattra SCCP", "1/2 Boca Juniors SPFC"], ["FC Speed Galatico", "SimasturboF.C"]],
+  13: [["Ivan Camisa 10", "Impondo F.C"], ["SimasturboF.C", "Ayrton Senna Eterno F. C."], ["1/2 Boca Juniors SPFC", "BarçaSampaSP"], ["SAF VK Phone", "SEP PALMEIRAS 19I4"], ["Vemkivem", "Doutromundo e-sports"], ["Real Mauadri", "Não Ynteressa FC"], ["Kartólattra SCCP", "SC Mercenário"], ["DBMC FC", "S.E.P ArmageBambi"], ["theo bernardes2016sa", "SilvanoLBraga FC"], ["Mcdonald Soccer", "FC Speed Galatico"]],
+  14: [["Ivan Camisa 10", "1/2 Boca Juniors SPFC"], ["SC Mercenário", "Ayrton Senna Eterno F. C."], ["S.E.P ArmageBambi", "Não Ynteressa FC"], ["DBMC FC", "Real Mauadri"], ["BarçaSampaSP", "Mcdonald Soccer"], ["FC Speed Galatico", "Doutromundo e-sports"], ["SAF VK Phone", "SimasturboF.C"], ["Impondo F.C", "theo bernardes2016sa"], ["SilvanoLBraga FC", "Kartólattra SCCP"], ["SEP PALMEIRAS 19I4", "Vemkivem"]],
+  15: [["Não Ynteressa FC", "Impondo F.C"], ["theo bernardes2016sa", "S.E.P ArmageBambi"], ["SimasturboF.C", "BarçaSampaSP"], ["Mcdonald Soccer", "Ivan Camisa 10"], ["1/2 Boca Juniors SPFC", "SC Mercenário"], ["Ayrton Senna Eterno F. C.", "Kartólattra SCCP"], ["Vemkivem", "SAF VK Phone"], ["SEP PALMEIRAS 19I4", "SilvanoLBraga FC"], ["Real Mauadri", "FC Speed Galatico"], ["Doutromundo e-sports", "DBMC FC"]],
+  16: [["Mcdonald Soccer", "SEP PALMEIRAS 19I4"], ["Impondo F.C", "Doutromundo e-sports"], ["theo bernardes2016sa", "SAF VK Phone"], ["SC Mercenário", "BarçaSampaSP"], ["Ayrton Senna Eterno F. C.", "Não Ynteressa FC"], ["Ivan Camisa 10", "Vemkivem"], ["SimasturboF.C", "Real Mauadri"], ["Kartólattra SCCP", "S.E.P ArmageBambi"], ["SilvanoLBraga FC", "1/2 Boca Juniors SPFC"], ["DBMC FC", "FC Speed Galatico"]],
+  17: [["SAF VK Phone", "Ivan Camisa 10"], ["S.E.P ArmageBambi", "Impondo F.C"], ["SEP PALMEIRAS 19I4", "theo bernardes2016sa"], ["Real Mauadri", "Ayrton Senna Eterno F. C."], ["FC Speed Galatico", "SC Mercenário"], ["BarçaSampaSP", "SilvanoLBraga FC"], ["1/2 Boca Juniors SPFC", "DBMC FC"], ["Vemkivem", "Mcdonald Soccer"], ["Doutromundo e-sports", "Kartólattra SCCP"], ["Não Ynteressa FC", "SimasturboF.C"]],
+  18: [["FC Speed Galatico", "Não Ynteressa FC"], ["DBMC FC", "SEP PALMEIRAS 19I4"], ["Real Mauadri", "Vemkivem"], ["SimasturboF.C", "Ivan Camisa 10"], ["Ayrton Senna Eterno F. C.", "S.E.P ArmageBambi"], ["Kartólattra SCCP", "Impondo F.C"], ["Doutromundo e-sports", "Mcdonald Soccer"], ["SC Mercenário", "SilvanoLBraga FC"], ["BarçaSampaSP", "theo bernardes2016sa"], ["1/2 Boca Juniors SPFC", "SAF VK Phone"]],
+  19: [["SAF VK Phone", "DBMC FC"], ["Vemkivem", "1/2 Boca Juniors SPFC"], ["Mcdonald Soccer", "SimasturboF.C"], ["Impondo F.C", "BarçaSampaSP"], ["Não Ynteressa FC", "SC Mercenário"], ["SilvanoLBraga FC", "FC Speed Galatico"], ["theo bernardes2016sa", "Kartólattra SCCP"], ["SEP PALMEIRAS 19I4", "Real Mauadri"], ["S.E.P ArmageBambi", "Doutromundo e-sports"], ["Ivan Camisa 10", "Ayrton Senna Eterno F. C."]],
+  20: [["Real Mauadri", "theo bernardes2016sa"], ["BarçaSampaSP", "Ivan Camisa 10"], ["FC Speed Galatico", "SAF VK Phone"], ["SimasturboF.C", "Vemkivem"], ["Doutromundo e-sports", "SEP PALMEIRAS 19I4"], ["SC Mercenário", "Mcdonald Soccer"], ["DBMC FC", "Impondo F.C"], ["Kartólattra SCCP", "Não Ynteressa FC"], ["1/2 Boca Juniors SPFC", "S.E.P ArmageBambi"], ["Ayrton Senna Eterno F. C.", "SilvanoLBraga FC"]],
+  21: [["Impondo F.C", "FC Speed Galatico"], ["SilvanoLBraga FC", "Doutromundo e-sports"], ["SAF VK Phone", "Ayrton Senna Eterno F. C."], ["S.E.P ArmageBambi", "SC Mercenário"], ["Mcdonald Soccer", "Kartólattra SCCP"], ["Não Ynteressa FC", "BarçaSampaSP"], ["Ivan Camisa 10", "Real Mauadri"], ["Vemkivem", "DBMC FC"], ["theo bernardes2016sa", "SimasturboF.C"], ["SEP PALMEIRAS 19I4", "1/2 Boca Juniors SPFC"]],
+  22: [["Ivan Camisa 10", "theo bernardes2016sa"], ["SimasturboF.C", "Doutromundo e-sports"], ["Real Mauadri", "SAF VK Phone"], ["Kartólattra SCCP", "Vemkivem"], ["BarçaSampaSP", "SEP PALMEIRAS 19I4"], ["1/2 Boca Juniors SPFC", "Mcdonald Soccer"], ["SC Mercenário", "Impondo F.C"], ["Ayrton Senna Eterno F. C.", "DBMC FC"], ["FC Speed Galatico", "S.E.P ArmageBambi"], ["Não Ynteressa FC", "SilvanoLBraga FC"]],
+  23: [["DBMC FC", "Kartólattra SCCP"], ["Impondo F.C", "1/2 Boca Juniors SPFC"], ["Vemkivem", "BarçaSampaSP"], ["Mcdonald Soccer", "Real Mauadri"], ["theo bernardes2016sa", "SC Mercenário"], ["Doutromundo e-sports", "Ayrton Senna Eterno F. C."], ["SAF VK Phone", "Não Ynteressa FC"], ["SilvanoLBraga FC", "SimasturboF.C"], ["S.E.P ArmageBambi", "Ivan Camisa 10"], ["SEP PALMEIRAS 19I4", "FC Speed Galatico"]]
+};
+
+const PONTUACOES_HIST = {"1": {"5709128": 54.9, "4749372": 60.76, "49413477": 61.56, "47922118": 64.76, "776045": 79.0, "25965847": 43.27, "242815": 57.07, "22951194": 68.66, "3208913": 72.16, "1064199": 71.56, "1023779": 50.16, "827179": 63.96, "13942933": 67.56, "179252": 70.7, "13971687": 61.1, "18743414": 73.95, "4395287": 56.15, "49806450": 79.45, "47750657": 60.76, "2658666": 72.9}, "2": {"25965847": 65.3, "13942933": 76.0, "1064199": 84.98, "47750657": 42.48, "2658666": 95.3, "776045": 80.8, "827179": 94.9, "4395287": 58.18, "18743414": 95.34, "1023779": 83.68, "47922118": 71.8, "13971687": 95.3, "4749372": 79.16, "49413477": 76.38, "179252": 68.3, "242815": 57.24, "22951194": 78.48, "5709128": 80.08, "49806450": 95.3, "3208913": 72.7}, "3": {"5709128": 72.96, "49413477": 86.56, "1064199": 79.06, "22951194": 93.44, "776045": 58.96, "4749372": 80.76, "242815": 85.54, "18743414": 98.61, "3208913": 79.86, "47922118": 89.26, "1023779": 75.66, "49806450": 90.51, "13942933": 93.56, "827179": 73.46, "179252": 85.96, "2658666": 97.76, "4395287": 76.85, "25965847": 86.34, "47750657": 73.64, "13971687": 89.56}, "4": {"18743414": 80.3, "179252": 76.9, "49806450": 72.45, "13942933": 62.58, "47922118": 48.83, "242815": 57.26, "4749372": 83.78, "1023779": 42.75, "827179": 80.38, "5709128": 45.35, "2658666": 92.93, "1064199": 48.2, "13971687": 45.75, "776045": 43.75, "22951194": 105.95, "47750657": 63.88, "49413477": 93.1, "4395287": 42.34, "25965847": 33.48, "3208913": 73.15}, "5": {"3208913": 94.62, "2658666": 80.77, "179252": 91.92, "49413477": 72.12, "1023779": 77.47, "13942933": 95.92, "22951194": 77.87, "4395287": 51.36, "25965847": 103.14, "47922118": 87.32, "242815": 73.64, "13971687": 98.32, "49806450": 91.32, "5709128": 101.47, "1064199": 87.52, "827179": 57.98, "776045": 84.02, "47750657": 87.19, "4749372": 95.42, "18743414": 102.62}, "6": {"4395287": 66.76, "1023779": 68.39, "49413477": 53.92, "25965847": 73.49, "5709128": 61.62, "179252": 72.96, "2658666": 48.41, "242815": 68.76, "13942933": 67.11, "22951194": 68.21, "827179": 70.76, "3208913": 51.06, "13971687": 71.66, "49806450": 68.11, "18743414": 74.91, "776045": 67.39, "47922118": 77.31, "1064199": 66.72, "47750657": 52.19, "4749372": 68.8}, "7": {"827179": 46.66, "49413477": 80.16, "22951194": 74.27, "18743414": 78.36, "179252": 77.87, "47922118": 54.34, "3208913": 45.42, "13971687": 68.17, "1023779": 68.57, "776045": 84.37, "1064199": 59.97, "5709128": 65.91, "2658666": 69.37, "13942933": 92.42, "4749372": 81.07, "4395287": 49.67, "25965847": 65.87, "49806450": 73.57, "47750657": 60.37, "242815": 87.67}, "8": {"18743414": 66.5, "49413477": 84.35, "5709128": 85.55, "1023779": 80.65, "776045": 72.45, "827179": 67.25, "1064199": 78.44, "4749372": 55.68, "47922118": 83.25, "2658666": 65.4, "179252": 68.22, "13971687": 80.25, "49806450": 66.9, "22951194": 72.15, "13942933": 78.15, "47750657": 66.36, "4395287": 31.45, "3208913": 76.25, "242815": 82.55, "25965847": 69.86}, "9": {"49413477": 70.06, "3208913": 80.88, "13942933": 73.88, "776045": 74.48, "47922118": 91.46, "4395287": 67.95, "22951194": 81.78, "179252": 97.88, "13971687": 77.46, "1064199": 74.26, "5709128": 67.08, "242815": 77.83, "2658666": 78.76, "49806450": 78.96, "47750657": 45.43, "1023779": 70.58, "827179": 70.96, "4749372": 92.24, "18743414": 81.28, "25965847": 62.83}, "10": {"776045": 68.97, "47922118": 62.27, "13971687": 57.67, "5709128": 56.28, "1064199": 55.63, "49413477": 35.87, "47750657": 24.85, "4395287": 53.67, "25965847": 55.83, "2658666": 48.37, "1023779": 48.88, "179252": 54.87, "242815": 45.68, "13942933": 57.87, "22951194": 70.78, "827179": 67.99, "3208913": 37.18, "18743414": 47.19, "4749372": 38.59, "49806450": 68.37}, "11": {"4395287": 89.56, "776045": 86.51, "49806450": 82.16, "1064199": 90.76, "3208913": 88.76, "22951194": 102.16, "2658666": 97.16, "1023779": 99.36, "13942933": 84.26, "4749372": 87.66, "179252": 102.51, "47750657": 82.56, "49413477": 90.86, "13971687": 95.76, "5709128": 95.46, "25965847": 76.98, "242815": 74.81, "827179": 101.66, "47922118": 99.06, "18743414": 99.06}, "12": {"1064199": 76.55, "776045": 92.7, "47750657": 67.49, "49413477": 86.25, "4395287": 87.32, "242815": 66.08, "47922118": 75.56, "4749372": 74.0, "13942933": 74.75, "3208913": 69.8, "2658666": 55.35, "5709128": 97.3, "13971687": 70.7, "1023779": 87.75, "827179": 86.0, "179252": 78.5, "18743414": 68.6, "49806450": 80.8, "25965847": 50.24, "22951194": 70.4}, "13": {"49413477": 117.69, "13942933": 117.94, "22951194": 140.79, "2658666": 112.09, "49806450": 119.19, "47922118": 116.24, "776045": 104.39, "3208913": 116.09, "242815": 100.09, "1064199": 135.59, "4749372": 112.74, "13971687": 118.39, "18743414": 88.14, "827179": 106.39, "179252": 127.79, "4395287": 97.89, "5709128": 96.42, "47750657": 29.23, "1023779": 86.64, "25965847": 81.3}, "14": {"49413477": 53.2, "49806450": 58.35, "827179": 56.65, "2658666": 63.9, "4395287": 54.34, "13971687": 70.68, "179252": 68.78, "4749372": 67.28, "47922118": 61.54, "1023779": 82.58, "25965847": 76.53, "1064199": 69.84, "776045": 58.93, "22951194": 46.23, "13942933": 73.15, "5709128": 62.45, "47750657": 80.63, "18743414": 62.85, "3208913": 59.65, "242815": 60.8}, "15": {"13971687": 47.65, "13942933": 48.12, "5709128": 42.85, "4395287": 61.8, "22951194": 55.7, "47922118": 36.66, "1023779": 49.05, "49413477": 64.87, "49806450": 53.93, "827179": 47.5, "2658666": 58.3, "18743414": 58.39, "242815": 54.65, "776045": 52.95, "3208913": 34.93, "47750657": 77.1, "4749372": 37.83, "25965847": 34.55, "1064199": 45.43, "179252": 54.98}, "16": {"1023779": 81.59, "3208913": 79.1, "13942933": 87.04, "1064199": 63.99, "5709128": 76.74, "776045": 73.69, "827179": 73.65, "47922118": 57.58, "2658666": 72.09, "13971687": 69.53, "49413477": 67.15, "242815": 109.65, "22951194": 77.19, "4749372": 74.04, "18743414": 63.26, "4395287": 54.49, "47750657": 51.21, "49806450": 63.48, "179252": 70.79, "25965847": 60.5}, "17": {"776045": 69.92, "49413477": 88.12, "4395287": 79.21, "13942933": 66.72, "3208913": 72.82, "5709128": 77.02, "4749372": 70.72, "2658666": 79.82, "25965847": 81.35, "827179": 76.47, "47922118": 71.52, "47750657": 26.9, "49806450": 88.97, "179252": 83.02, "242815": 69.5, "1023779": 78.57, "1064199": 76.02, "18743414": 78.62, "13971687": 85.32, "22951194": 59.07}, "18": {"25965847": 56.27, "13971687": 106.45, "179252": 117.0, "3208913": 105.35, "4749372": 104.8, "242815": 56.25, "22951194": 95.3, "49413477": 111.55, "2658666": 117.85, "4395287": 106.03, "18743414": 111.3, "13942933": 107.75, "1064199": 105.7, "1023779": 108.6, "827179": 103.9, "47750657": 30.77, "47922118": 120.25, "5709128": 111.3, "49806450": 99.5, "776045": 116.45}, "19": {"776045": 134.08, "179252": 126.08, "242815": 121.32, "49806450": 111.98, "1023779": 109.68, "22951194": 118.7, "13942933": 101.38, "47922118": 130.88, "13971687": 118.58, "827179": 136.88, "47750657": 30.1, "25965847": 99.32, "5709128": 112.18, "18743414": 140.68, "3208913": 50.6, "4749372": 117.58, "4395287": 112.58, "1064199": 114.28, "49413477": 119.78, "2658666": 120.24}, "20": {"4749372": 106.81, "5709128": 97.11, "47922118": 81.71, "49413477": 100.21, "25965847": 108.73, "776045": 129.11, "22951194": 109.51, "242815": 95.56, "1064199": 102.93, "3208913": 103.51, "827179": 106.03, "1023779": 101.41, "179252": 110.36, "13942933": 97.11, "18743414": 98.01, "13971687": 102.61, "49806450": 96.38, "4395287": 102.76, "2658666": 111.61, "47750657": 55.58}, "21": {"13942933": 87.08, "25965847": 88.76, "47750657": 42.06, "1064199": 61.4, "776045": 89.0, "2658666": 24.8, "4395287": 86.46, "827179": 94.65, "1023779": 19.4, "18743414": 98.18, "13971687": 83.9, "47922118": 92.0, "49413477": 83.25, "4749372": 79.93, "242815": 67.04, "179252": 76.95, "5709128": 93.15, "22951194": 84.19, "3208913": 78.15, "49806450": 64.9}, "22": {"49413477": 70.61, "5709128": 75.61, "22951194": 62.16, "1064199": 80.36, "4749372": 74.21, "776045": 79.41, "18743414": 72.91, "242815": 59.96, "47922118": 70.91, "3208913": 77.41, "49806450": 77.8, "1023779": 86.41, "827179": 93.96, "13942933": 77.56, "2658666": 76.61, "179252": 55.91, "25965847": 83.15, "4395287": 60.9, "13971687": 88.96, "47750657": 45.6}, "23": {"179252": 74.91, "18743414": 77.53, "13942933": 70.15, "49806450": 67.17, "242815": 72.55, "47922118": 40.67, "1023779": 66.55, "4749372": 62.08, "5709128": 70.37, "827179": 74.11, "1064199": 57.85, "2658666": 67.45, "776045": 68.75, "13971687": 68.47, "47750657": 89.4, "22951194": 65.65, "4395287": 55.15, "49413477": 56.33, "3208913": 63.87, "25965847": 76.76}};
+
 const FIXTURES_R23_A_R38 = {
-  23: [
-    ["theo bernardes2016sa", "SC Mercenário"],
-    ["Doutromundo e-sports", "Ayrton Senna Eterno F. C."],
-    ["SAF VK Phone", "Não Ynteressa FC"],
-    ["Vemkivem", "BarçaSampaSP"],
-    ["SEP PALMEIRAS 19I4", "FC Speed Galatico"],
-    ["Mcdonald Soccer", "Real Mauadri"],
-    ["Impondo F.C", "1/2 Boca Juniors SPFC"],
-    ["DBMC FC", "Kartólattra SCCP"],
-    ["S.E.P ArmageBambi", "Ivan Camisa 10"],
-    ["SilvanoLBraga FC", "SimasturboF.C"],
-  ],
-  24: [
-    ["theo bernardes2016sa", "1/2 Boca Juniors SPFC"],
-    ["Ivan Camisa 10", "DBMC FC"],
-    ["Ayrton Senna Eterno F. C.", "SEP PALMEIRAS 19I4"],
-    ["SC Mercenário", "Doutromundo e-sports"],
-    ["Kartólattra SCCP", "Real Mauadri"],
-    ["SimasturboF.C", "FC Speed Galatico"],
-    ["Impondo F.C", "Mcdonald Soccer"],
-    ["Não Ynteressa FC", "Vemkivem"],
-    ["S.E.P ArmageBambi", "BarçaSampaSP"],
-    ["SilvanoLBraga FC", "SAF VK Phone"],
-  ],
-  25: [
-    ["FC Speed Galatico", "Ivan Camisa 10"],
-    ["Doutromundo e-sports", "SimasturboF.C"],
-    ["SAF VK Phone", "Kartólattra SCCP"],
-    ["Vemkivem", "Ayrton Senna Eterno F. C."],
-    ["SEP PALMEIRAS 19I4", "SC Mercenário"],
-    ["Mcdonald Soccer", "S.E.P ArmageBambi"],
-    ["Real Mauadri", "SilvanoLBraga FC"],
-    ["DBMC FC", "theo bernardes2016sa"],
-    ["BarçaSampaSP", "Impondo F.C"],
-    ["1/2 Boca Juniors SPFC", "Não Ynteressa FC"],
-  ],
-  26: [
-    ["theo bernardes2016sa", "Doutromundo e-sports"],
-    ["Ivan Camisa 10", "SC Mercenário"],
-    ["SAF VK Phone", "Mcdonald Soccer"],
-    ["Vemkivem", "SilvanoLBraga FC"],
-    ["Kartólattra SCCP", "BarçaSampaSP"],
-    ["SimasturboF.C", "DBMC FC"],
-    ["Impondo F.C", "Ayrton Senna Eterno F. C."],
-    ["Não Ynteressa FC", "SEP PALMEIRAS 19I4"],
-    ["S.E.P ArmageBambi", "Real Mauadri"],
-    ["1/2 Boca Juniors SPFC", "FC Speed Galatico"],
-  ],
-  27: [
-    ["FC Speed Galatico", "Vemkivem"],
-    ["Ivan Camisa 10", "Kartólattra SCCP"],
-    ["Ayrton Senna Eterno F. C.", "SimasturboF.C"],
-    ["SC Mercenário", "SAF VK Phone"],
-    ["SEP PALMEIRAS 19I4", "S.E.P ArmageBambi"],
-    ["Mcdonald Soccer", "theo bernardes2016sa"],
-    ["Real Mauadri", "Doutromundo e-sports"],
-    ["Não Ynteressa FC", "DBMC FC"],
-    ["BarçaSampaSP", "1/2 Boca Juniors SPFC"],
-    ["SilvanoLBraga FC", "Impondo F.C"],
-  ],
-  28: [
-    ["FC Speed Galatico", "Kartólattra SCCP"],
-    ["Doutromundo e-sports", "Não Ynteressa FC"],
-    ["SAF VK Phone", "Impondo F.C"],
-    ["Vemkivem", "theo bernardes2016sa"],
-    ["SEP PALMEIRAS 19I4", "Ivan Camisa 10"],
-    ["Mcdonald Soccer", "SilvanoLBraga FC"],
-    ["Real Mauadri", "SC Mercenário"],
-    ["DBMC FC", "BarçaSampaSP"],
-    ["S.E.P ArmageBambi", "SimasturboF.C"],
-    ["1/2 Boca Juniors SPFC", "Ayrton Senna Eterno F. C."],
-  ],
-  29: [
-    ["theo bernardes2016sa", "Não Ynteressa FC"],
-    ["Ivan Camisa 10", "Doutromundo e-sports"],
-    ["Ayrton Senna Eterno F. C.", "FC Speed Galatico"],
-    ["SC Mercenário", "BarçaSampaSP"],
-    ["Kartólattra SCCP", "SEP PALMEIRAS 19I4"],
-    ["SimasturboF.C", "SAF VK Phone"],
-    ["Impondo F.C", "Vemkivem"],
-    ["DBMC FC", "Mcdonald Soccer"],
-    ["S.E.P ArmageBambi", "SilvanoLBraga FC"],
-    ["1/2 Boca Juniors SPFC", "Real Mauadri"],
-  ],
-  30: [
-    ["FC Speed Galatico", "theo bernardes2016sa"],
-    ["Doutromundo e-sports", "1/2 Boca Juniors SPFC"],
-    ["SAF VK Phone", "S.E.P ArmageBambi"],
-    ["SC Mercenário", "Vemkivem"],
-    ["Kartólattra SCCP", "SimasturboF.C"],
-    ["Mcdonald Soccer", "Ayrton Senna Eterno F. C."],
-    ["Real Mauadri", "Impondo F.C"],
-    ["Não Ynteressa FC", "Ivan Camisa 10"],
-    ["BarçaSampaSP", "SEP PALMEIRAS 19I4"],
-    ["SilvanoLBraga FC", "DBMC FC"],
-  ],
-  31: [
-    ["theo bernardes2016sa", "Ayrton Senna Eterno F. C."],
-    ["Ivan Camisa 10", "SilvanoLBraga FC"],
-    ["SAF VK Phone", "Doutromundo e-sports"],
-    ["Vemkivem", "S.E.P ArmageBambi"],
-    ["SEP PALMEIRAS 19I4", "Impondo F.C"],
-    ["Mcdonald Soccer", "Não Ynteressa FC"],
-    ["Real Mauadri", "SimasturboF.C"],
-    ["DBMC FC", "SC Mercenário"],
-    ["BarçaSampaSP", "FC Speed Galatico"],
-    ["1/2 Boca Juniors SPFC", "Kartólattra SCCP"],
-  ],
-  32: [
-    ["FC Speed Galatico", "Mcdonald Soccer"],
-    ["Doutromundo e-sports", "Vemkivem"],
-    ["Ayrton Senna Eterno F. C.", "BarçaSampaSP"],
-    ["SC Mercenário", "Kartólattra SCCP"],
-    ["SEP PALMEIRAS 19I4", "SAF VK Phone"],
-    ["SimasturboF.C", "1/2 Boca Juniors SPFC"],
-    ["Impondo F.C", "Ivan Camisa 10"],
-    ["Não Ynteressa FC", "Real Mauadri"],
-    ["S.E.P ArmageBambi", "DBMC FC"],
-    ["SilvanoLBraga FC", "theo bernardes2016sa"],
-  ],
-  33: [
-    ["theo bernardes2016sa", "Impondo F.C"],
-    ["Doutromundo e-sports", "FC Speed Galatico"],
-    ["Ayrton Senna Eterno F. C.", "SC Mercenário"],
-    ["Vemkivem", "SEP PALMEIRAS 19I4"],
-    ["Kartólattra SCCP", "SilvanoLBraga FC"],
-    ["Mcdonald Soccer", "SimasturboF.C"],
-    ["Real Mauadri", "DBMC FC"],
-    ["Não Ynteressa FC", "S.E.P ArmageBambi"],
-    ["BarçaSampaSP", "SAF VK Phone"],
-    ["1/2 Boca Juniors SPFC", "Ivan Camisa 10"],
-  ],
-  34: [
-    ["FC Speed Galatico", "Real Mauadri"],
-    ["Ivan Camisa 10", "Mcdonald Soccer"],
-    ["SAF VK Phone", "Vemkivem"],
-    ["SC Mercenário", "1/2 Boca Juniors SPFC"],
-    ["Kartólattra SCCP", "Ayrton Senna Eterno F. C."],
-    ["SimasturboF.C", "BarçaSampaSP"],
-    ["Impondo F.C", "Não Ynteressa FC"],
-    ["DBMC FC", "Doutromundo e-sports"],
-    ["S.E.P ArmageBambi", "theo bernardes2016sa"],
-    ["SilvanoLBraga FC", "SEP PALMEIRAS 19I4"],
-  ],
-  35: [
-    ["FC Speed Galatico", "DBMC FC"],
-    ["Doutromundo e-sports", "Impondo F.C"],
-    ["SAF VK Phone", "theo bernardes2016sa"],
-    ["Vemkivem", "Ivan Camisa 10"],
-    ["SEP PALMEIRAS 19I4", "Mcdonald Soccer"],
-    ["SimasturboF.C", "SC Mercenário"],
-    ["Real Mauadri", "BarçaSampaSP"],
-    ["Não Ynteressa FC", "Ayrton Senna Eterno F. C."],
-    ["S.E.P ArmageBambi", "Kartólattra SCCP"],
-    ["1/2 Boca Juniors SPFC", "SilvanoLBraga FC"],
-  ],
-  36: [
-    ["theo bernardes2016sa", "SEP PALMEIRAS 19I4"],
-    ["Ivan Camisa 10", "SAF VK Phone"],
-    ["Ayrton Senna Eterno F. C.", "Real Mauadri"],
-    ["SC Mercenário", "FC Speed Galatico"],
-    ["Kartólattra SCCP", "Doutromundo e-sports"],
-    ["Mcdonald Soccer", "Vemkivem"],
-    ["Impondo F.C", "S.E.P ArmageBambi"],
-    ["DBMC FC", "1/2 Boca Juniors SPFC"],
-    ["BarçaSampaSP", "Não Ynteressa FC"],
-    ["SilvanoLBraga FC", "SimasturboF.C"],
-  ],
-  37: [
-    ["theo bernardes2016sa", "SimasturboF.C"],
-    ["Ivan Camisa 10", "BarçaSampaSP"],
-    ["SAF VK Phone", "1/2 Boca Juniors SPFC"],
-    ["Vemkivem", "Real Mauadri"],
-    ["SEP PALMEIRAS 19I4", "DBMC FC"],
-    ["Mcdonald Soccer", "Doutromundo e-sports"],
-    ["Impondo F.C", "Kartólattra SCCP"],
-    ["Não Ynteressa FC", "FC Speed Galatico"],
-    ["S.E.P ArmageBambi", "Ayrton Senna Eterno F. C."],
-    ["SilvanoLBraga FC", "SC Mercenário"],
-  ],
-  38: [
-    ["FC Speed Galatico", "SilvanoLBraga FC"],
-    ["Doutromundo e-sports", "S.E.P ArmageBambi"],
-    ["Ayrton Senna Eterno F. C.", "Ivan Camisa 10"],
-    ["SC Mercenário", "Não Ynteressa FC"],
-    ["Kartólattra SCCP", "theo bernardes2016sa"],
-    ["SimasturboF.C", "Impondo F.C"],
-    ["Real Mauadri", "SEP PALMEIRAS 19I4"],
-    ["DBMC FC", "SAF VK Phone"],
-    ["BarçaSampaSP", "Mcdonald Soccer"],
-    ["1/2 Boca Juniors SPFC", "Vemkivem"],
-  ],
+  23: [["theo bernardes2016sa", "SC Mercenário"], ["Doutromundo e-sports", "Ayrton Senna Eterno F. C."], ["SAF VK Phone", "Não Ynteressa FC"], ["Vemkivem", "BarçaSampaSP"], ["SEP PALMEIRAS 19I4", "FC Speed Galatico"], ["Mcdonald Soccer", "Real Mauadri"], ["Impondo F.C", "1/2 Boca Juniors SPFC"], ["DBMC FC", "Kartólattra SCCP"], ["S.E.P ArmageBambi", "Ivan Camisa 10"], ["SilvanoLBraga FC", "SimasturboF.C"]],
+  24: [["theo bernardes2016sa", "1/2 Boca Juniors SPFC"], ["Ivan Camisa 10", "DBMC FC"], ["Ayrton Senna Eterno F. C.", "SEP PALMEIRAS 19I4"], ["SC Mercenário", "Doutromundo e-sports"], ["Kartólattra SCCP", "Real Mauadri"], ["SimasturboF.C", "FC Speed Galatico"], ["Impondo F.C", "Mcdonald Soccer"], ["Não Ynteressa FC", "Vemkivem"], ["S.E.P ArmageBambi", "BarçaSampaSP"], ["SilvanoLBraga FC", "SAF VK Phone"]],
+  25: [["FC Speed Galatico", "Ivan Camisa 10"], ["Doutromundo e-sports", "SimasturboF.C"], ["SAF VK Phone", "Kartólattra SCCP"], ["Vemkivem", "Ayrton Senna Eterno F. C."], ["SEP PALMEIRAS 19I4", "SC Mercenário"], ["Mcdonald Soccer", "S.E.P ArmageBambi"], ["Real Mauadri", "SilvanoLBraga FC"], ["DBMC FC", "theo bernardes2016sa"], ["BarçaSampaSP", "Impondo F.C"], ["1/2 Boca Juniors SPFC", "Não Ynteressa FC"]],
+  26: [["theo bernardes2016sa", "Doutromundo e-sports"], ["Ivan Camisa 10", "SC Mercenário"], ["SAF VK Phone", "Mcdonald Soccer"], ["Vemkivem", "SilvanoLBraga FC"], ["Kartólattra SCCP", "BarçaSampaSP"], ["SimasturboF.C", "DBMC FC"], ["Impondo F.C", "Ayrton Senna Eterno F. C."], ["Não Ynteressa FC", "SEP PALMEIRAS 19I4"], ["S.E.P ArmageBambi", "Real Mauadri"], ["1/2 Boca Juniors SPFC", "FC Speed Galatico"]],
+  27: [["FC Speed Galatico", "Vemkivem"], ["Ivan Camisa 10", "Kartólattra SCCP"], ["Ayrton Senna Eterno F. C.", "SimasturboF.C"], ["SC Mercenário", "SAF VK Phone"], ["SEP PALMEIRAS 19I4", "S.E.P ArmageBambi"], ["Mcdonald Soccer", "theo bernardes2016sa"], ["Real Mauadri", "Doutromundo e-sports"], ["Não Ynteressa FC", "DBMC FC"], ["BarçaSampaSP", "1/2 Boca Juniors SPFC"], ["SilvanoLBraga FC", "Impondo F.C"]],
+  28: [["FC Speed Galatico", "Kartólattra SCCP"], ["Doutromundo e-sports", "Não Ynteressa FC"], ["SAF VK Phone", "Impondo F.C"], ["Vemkivem", "theo bernardes2016sa"], ["SEP PALMEIRAS 19I4", "Ivan Camisa 10"], ["Mcdonald Soccer", "SilvanoLBraga FC"], ["Real Mauadri", "SC Mercenário"], ["DBMC FC", "BarçaSampaSP"], ["S.E.P ArmageBambi", "SimasturboF.C"], ["1/2 Boca Juniors SPFC", "Ayrton Senna Eterno F. C."]],
+  29: [["theo bernardes2016sa", "Não Ynteressa FC"], ["Ivan Camisa 10", "Doutromundo e-sports"], ["Ayrton Senna Eterno F. C.", "FC Speed Galatico"], ["SC Mercenário", "BarçaSampaSP"], ["Kartólattra SCCP", "SEP PALMEIRAS 19I4"], ["SimasturboF.C", "SAF VK Phone"], ["Impondo F.C", "Vemkivem"], ["DBMC FC", "Mcdonald Soccer"], ["S.E.P ArmageBambi", "SilvanoLBraga FC"], ["1/2 Boca Juniors SPFC", "Real Mauadri"]],
+  30: [["FC Speed Galatico", "theo bernardes2016sa"], ["Doutromundo e-sports", "1/2 Boca Juniors SPFC"], ["SAF VK Phone", "S.E.P ArmageBambi"], ["SC Mercenário", "Vemkivem"], ["Kartólattra SCCP", "SimasturboF.C"], ["Mcdonald Soccer", "Ayrton Senna Eterno F. C."], ["Real Mauadri", "Impondo F.C"], ["Não Ynteressa FC", "Ivan Camisa 10"], ["BarçaSampaSP", "SEP PALMEIRAS 19I4"], ["SilvanoLBraga FC", "DBMC FC"]],
+  31: [["theo bernardes2016sa", "Ayrton Senna Eterno F. C."], ["Ivan Camisa 10", "SilvanoLBraga FC"], ["SAF VK Phone", "Doutromundo e-sports"], ["Vemkivem", "S.E.P ArmageBambi"], ["SEP PALMEIRAS 19I4", "Impondo F.C"], ["Mcdonald Soccer", "Não Ynteressa FC"], ["Real Mauadri", "SimasturboF.C"], ["DBMC FC", "SC Mercenário"], ["BarçaSampaSP", "FC Speed Galatico"], ["1/2 Boca Juniors SPFC", "Kartólattra SCCP"]],
+  32: [["FC Speed Galatico", "Mcdonald Soccer"], ["Doutromundo e-sports", "Vemkivem"], ["Ayrton Senna Eterno F. C.", "BarçaSampaSP"], ["SC Mercenário", "Kartólattra SCCP"], ["SEP PALMEIRAS 19I4", "SAF VK Phone"], ["SimasturboF.C", "1/2 Boca Juniors SPFC"], ["Impondo F.C", "Ivan Camisa 10"], ["Não Ynteressa FC", "Real Mauadri"], ["S.E.P ArmageBambi", "DBMC FC"], ["SilvanoLBraga FC", "theo bernardes2016sa"]],
+  33: [["theo bernardes2016sa", "Impondo F.C"], ["Doutromundo e-sports", "FC Speed Galatico"], ["Ayrton Senna Eterno F. C.", "SC Mercenário"], ["Vemkivem", "SEP PALMEIRAS 19I4"], ["Kartólattra SCCP", "SilvanoLBraga FC"], ["Mcdonald Soccer", "SimasturboF.C"], ["Real Mauadri", "DBMC FC"], ["Não Ynteressa FC", "S.E.P ArmageBambi"], ["BarçaSampaSP", "SAF VK Phone"], ["1/2 Boca Juniors SPFC", "Ivan Camisa 10"]],
+  34: [["FC Speed Galatico", "Real Mauadri"], ["Ivan Camisa 10", "Mcdonald Soccer"], ["SAF VK Phone", "Vemkivem"], ["SC Mercenário", "1/2 Boca Juniors SPFC"], ["Kartólattra SCCP", "Ayrton Senna Eterno F. C."], ["SimasturboF.C", "BarçaSampaSP"], ["Impondo F.C", "Não Ynteressa FC"], ["DBMC FC", "Doutromundo e-sports"], ["S.E.P ArmageBambi", "theo bernardes2016sa"], ["SilvanoLBraga FC", "SEP PALMEIRAS 19I4"]],
+  35: [["FC Speed Galatico", "DBMC FC"], ["Doutromundo e-sports", "Impondo F.C"], ["SAF VK Phone", "theo bernardes2016sa"], ["Vemkivem", "Ivan Camisa 10"], ["SEP PALMEIRAS 19I4", "Mcdonald Soccer"], ["SimasturboF.C", "SC Mercenário"], ["Real Mauadri", "BarçaSampaSP"], ["Não Ynteressa FC", "Ayrton Senna Eterno F. C."], ["S.E.P ArmageBambi", "Kartólattra SCCP"], ["1/2 Boca Juniors SPFC", "SilvanoLBraga FC"]],
+  36: [["theo bernardes2016sa", "SEP PALMEIRAS 19I4"], ["Ivan Camisa 10", "SAF VK Phone"], ["Ayrton Senna Eterno F. C.", "Real Mauadri"], ["SC Mercenário", "FC Speed Galatico"], ["Kartólattra SCCP", "Doutromundo e-sports"], ["Mcdonald Soccer", "Vemkivem"], ["Impondo F.C", "S.E.P ArmageBambi"], ["DBMC FC", "1/2 Boca Juniors SPFC"], ["BarçaSampaSP", "Não Ynteressa FC"], ["SilvanoLBraga FC", "SimasturboF.C"]],
+  37: [["theo bernardes2016sa", "SimasturboF.C"], ["Ivan Camisa 10", "BarçaSampaSP"], ["SAF VK Phone", "1/2 Boca Juniors SPFC"], ["Vemkivem", "Real Mauadri"], ["SEP PALMEIRAS 19I4", "DBMC FC"], ["Mcdonald Soccer", "Doutromundo e-sports"], ["Impondo F.C", "Kartólattra SCCP"], ["Não Ynteressa FC", "FC Speed Galatico"], ["S.E.P ArmageBambi", "Ayrton Senna Eterno F. C."], ["SilvanoLBraga FC", "SC Mercenário"]],
+  38: [["FC Speed Galatico", "SilvanoLBraga FC"], ["Doutromundo e-sports", "S.E.P ArmageBambi"], ["Ayrton Senna Eterno F. C.", "Ivan Camisa 10"], ["SC Mercenário", "Não Ynteressa FC"], ["Kartólattra SCCP", "theo bernardes2016sa"], ["SimasturboF.C", "Impondo F.C"], ["Real Mauadri", "SEP PALMEIRAS 19I4"], ["DBMC FC", "SAF VK Phone"], ["BarçaSampaSP", "Mcdonald Soccer"], ["1/2 Boca Juniors SPFC", "Vemkivem"]]
 };
 
 const DEFAULT_CONFIG = {
   nomeLiga: "Liga Cartoleiro 3 Pontos 2026",
   numGrupos: 1,
-  numRodadas: 16,
-  rodadaInicial: 23,
+  numRodadas: 38,
+  rodadaInicial: 1,
   margemEmpate: 3,
   byeCount: 0,
   playoffPairs: 0,
@@ -300,17 +161,13 @@ function defaultData() {
   const byName = {};
   teams.forEach((t) => (byName[t.nome] = t.id));
   const fixtures = [];
-  Object.keys(FIXTURES_R23_A_R38).forEach((rodadaStr) => {
+  const allFix = { ...FIXTURES_R1_A_R23, ...FIXTURES_R23_A_R38 };
+  Object.keys(allFix).forEach((rodadaStr) => {
     const rodada = Number(rodadaStr);
-    FIXTURES_R23_A_R38[rodada].forEach(([nomeA, nomeB]) => {
+    const pairs = (rodada <= 23 && FIXTURES_R1_A_R23[rodada]) ? FIXTURES_R1_A_R23[rodada] : allFix[rodadaStr];
+    (pairs || []).forEach(([nomeA, nomeB]) => {
       if (byName[nomeA] && byName[nomeB]) {
-        fixtures.push({
-          id: uid(),
-          grupo: 1,
-          rodada,
-          timeA: byName[nomeA],
-          timeB: byName[nomeB],
-        });
+        fixtures.push({ id: uid(), grupo: 1, rodada, timeA: byName[nomeA], timeB: byName[nomeB] });
       }
     });
   });
@@ -357,20 +214,63 @@ function rodadaMaisRecenteComDados(pontuacoes) {
   return max;
 }
 
+function pontosH2H(idA, idB, fixtures, pontuacoes, config, limite) {
+  let ptsA = 0, ptsB = 0, jogos = 0;
+  fixtures.forEach((f) => {
+    if (f.rodada < 24 || f.rodada > limite) return;
+    const isAB = f.timeA === idA && f.timeB === idB;
+    const isBA = f.timeA === idB && f.timeB === idA;
+    if (!isAB && !isBA) return;
+    const p1 = pontosDoTime(pontuacoes, f.rodada, f.timeA);
+    const p2 = pontosDoTime(pontuacoes, f.rodada, f.timeB);
+    if (p1 == null || p2 == null) return;
+    const res = resultadoConfronto(p1, p2, config.margemEmpate);
+    jogos++;
+    if (res === "empate") { ptsA += 1; ptsB += 1; }
+    else if (res === "A") { if (isAB) ptsA += 3; else ptsB += 3; }
+    else { if (isAB) ptsB += 3; else ptsA += 3; }
+  });
+  return { ptsA, ptsB, jogos };
+}
+
+function calcularMito2T(teams, pontuacoes) {
+  let melhor = { pontos: MITO_2T_BASE.pontos, time: MITO_2T_BASE.time, rodada: MITO_2T_BASE.rodada };
+  const byId = {};
+  teams.forEach((t) => { byId[t.id] = t.nome; });
+  Object.keys(pontuacoes || {}).forEach((r) => {
+    const rn = Number(r);
+    if (rn < 24) return;
+    Object.keys(pontuacoes[r] || {}).forEach((id) => {
+      const p = pontuacoes[r][id];
+      if (p != null && p > melhor.pontos) {
+        melhor = { pontos: p, time: byId[id] || id, rodada: rn };
+      }
+    });
+  });
+  return melhor;
+}
+
 function calcularClassificacao(teams, fixtures, pontuacoes, config, ateRodada) {
   const limite = ateRodada === undefined ? Infinity : ateRodada;
   const stats = {};
   teams.forEach((t) => {
-    const base = BASE_R23[t.nome] || { pts: 0, j: 0, v: 0, e: 0, d: 0, rv: 0 };
+    const base = BASE_R23[t.nome] || { pts: 0, j: 0, v: 0, e: 0, d: 0, rv: 0, cartola: 0 };
+    let cartolaExtra = 0;
+    Object.keys(pontuacoes || {}).forEach((r) => {
+      const rn = Number(r);
+      if (rn < 24 || rn > limite) return;
+      const p = pontosDoTime(pontuacoes, rn, t.id);
+      if (p != null) cartolaExtra += p;
+    });
     stats[t.id] = {
       id: t.id, nome: t.nome, grupo: t.grupo,
       j: base.j, v: base.v, e: base.e, d: base.d,
-      gp: 0, gc: 0, sg: 0, pts: base.pts, rv: base.rv
+      gp: 0, gc: 0, sg: 0, pts: base.pts, rv: base.rv,
+      cartola: (base.cartola || 0) + cartolaExtra
     };
   });
   fixtures.forEach((f) => {
-    if (f.rodada < 24) return;
-    if (f.rodada > limite) return;
+    if (f.rodada < 24 || f.rodada > limite) return;
     const ptsA = pontosDoTime(pontuacoes, f.rodada, f.timeA);
     const ptsB = pontosDoTime(pontuacoes, f.rodada, f.timeB);
     if (ptsA == null || ptsB == null) return;
@@ -389,13 +289,21 @@ function calcularClassificacao(teams, fixtures, pontuacoes, config, ateRodada) {
   });
   Object.values(stats).forEach((s) => (s.sg = s.gp - s.gc));
   const arr = Object.values(stats);
-  arr.sort((x, y) => y.pts - x.pts || y.v - x.v || y.rv - x.rv || y.sg - x.sg || y.gp - x.gp);
+  arr.sort((x, y) => {
+    if (y.pts !== x.pts) return y.pts - x.pts;
+    if (y.v !== x.v) return y.v - x.v;
+    const h2h = pontosH2H(x.id, y.id, fixtures, pontuacoes, config, limite);
+    if (h2h.jogos > 0 && h2h.ptsA !== h2h.ptsB) return h2h.ptsB - h2h.ptsA;
+    if ((y.cartola || 0) !== (x.cartola || 0)) return (y.cartola || 0) - (x.cartola || 0);
+    return y.rv - x.rv;
+  });
   return arr;
 }
 
 const TABS = [
   { key: "classificacao", label: "Classificação", icon: "🏆" },
   { key: "confrontos", label: "Confrontos", icon: "⚔️" },
+  { key: "mitos", label: "Mitos", icon: "⭐" },
   { key: "times", label: "Times", icon: "👥" },
   { key: "admin", label: "Admin", icon: "⚙️" },
 ];
@@ -414,6 +322,51 @@ function App() {
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
+  const shareCardRef = useRef(null);
+
+  const compartilharImagem = async (titulo) => {
+    if (!shareCardRef.current) return;
+    try {
+      showToast("Gerando imagem para o WhatsApp...");
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 2,
+        backgroundColor: "#020617", // slate-950
+        logging: false
+      });
+      canvas.toBlob(async (blob) => {
+        if (!blob) { showToast("Erro ao gerar imagem"); return; }
+        const file = new File([blob], `${titulo.toLowerCase().replace(/\s+/g, '-')}.png`, { type: "image/png" });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: titulo,
+              text: `Confira ${titulo} da ${data?.config?.nomeLiga || 'Liga'}! ⚽🔥`,
+              files: [file]
+            });
+            return;
+          } catch (err) {
+            if (err.name !== 'AbortError') console.log(err);
+          }
+        }
+        
+        // Fallback: download da imagem para envio manual
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${titulo.toLowerCase().replace(/\s+/g, '-')}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Imagem baixada! Envie no WhatsApp 📱");
+      }, "image/png");
+    } catch (e) {
+      console.error(e);
+      showToast("Erro ao capturar tela para compartilhamento");
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -422,6 +375,13 @@ function App() {
         try { liga = await fbGet("liga"); } catch (e) { liga = null; }
         try { pts = await fbGet("pontuacoes") || {}; } catch (e) { pts = {}; }
         if (cancelled) return;
+        const hist = typeof PONTUACOES_HIST !== "undefined" ? PONTUACOES_HIST : {};
+        const merged = { ...hist };
+        Object.keys(pts || {}).forEach((r) => {
+          if (Number(r) >= 24) merged[r] = pts[r];
+          else if (!merged[r]) merged[r] = pts[r];
+        });
+        pts = merged;
         if (liga && liga.config) {
           setData(liga);
         } else {
@@ -452,17 +412,17 @@ function App() {
 
   const classGeral = useMemo(() => (data ? calcularClassificacao(data.teams, data.fixtures, pontuacoes, data.config) : []), [data, pontuacoes]);
 
-  // Calcula as posições da rodada anterior para gerar as setas de sobe/desce
   const posicoesAnteriores = useMemo(() => {
     if (!data) return {};
     const rodadaAtual = rodadaMaisRecenteComDados(pontuacoes);
-    // Se estivermos na R24, a "rodada anterior" é a base R23 pura
     const limiteAnterior = rodadaAtual <= 24 ? 23 : rodadaAtual - 1;
     const classAnterior = calcularClassificacao(data.teams, data.fixtures, pontuacoes, data.config, limiteAnterior);
     const mapa = {};
     classAnterior.forEach((t, i) => { mapa[t.id] = i + 1; });
     return mapa;
   }, [data, pontuacoes]);
+
+  const mito2T = useMemo(() => (data ? calcularMito2T(data.teams, pontuacoes) : MITO_2T_BASE), [data, pontuacoes]);
 
   const unlockAdmin = () => {
     if (pinInput === (data?.config?.pin || "liga3pontos")) {
@@ -493,15 +453,15 @@ function App() {
   }
 
   const fixturesRodada = data.fixtures.filter((f) => f.rodada === rodadaSel);
-  const rodadas = Array.from({ length: 16 }, (_, i) => 23 + i);
+  const rodadas = Array.from({ length: 38 }, (_, i) => 1 + i);
 
-  return React.createElement("div", { className: "min-h-screen bg-slate-950 text-slate-50" },
+  return React.createElement("div", { className: "min-h-screen bg-slate-950 text-slate-50 pb-12" },
     React.createElement("header", { className: "sticky top-0 z-20 bg-slate-950/95 border-b border-slate-800 backdrop-blur" },
       React.createElement("div", { className: "max-w-3xl mx-auto px-4 py-3 flex items-center gap-3" },
         React.createElement("img", { src: "logo-liga-3-pontos.png", alt: "Logo", className: "w-10 h-10 object-contain" }),
         React.createElement("div", { className: "flex-1 min-w-0" },
           React.createElement("h1", { className: "text-sm font-black uppercase tracking-wide text-lime-400 truncate" }, data.config.nomeLiga),
-          React.createElement("p", { className: "text-xs text-slate-400" }, "20 times · Rodadas 23–38 · Margem ", data.config.margemEmpate)
+          React.createElement("p", { className: "text-xs text-slate-400" }, "20 times · Rodadas 1–38 · Margem ", data.config.margemEmpate)
         ),
         React.createElement("span", { className: `w-2 h-2 rounded-full ${connStatus === "ok" ? "bg-emerald-400" : "bg-red-400"}` })
       ),
@@ -515,24 +475,74 @@ function App() {
     ),
 
     React.createElement("main", { className: "max-w-3xl mx-auto px-4 py-4" },
-      tab === "classificacao" && React.createElement(ClassTable, { rows: classGeral, posicoesAnteriores }),
+      tab === "classificacao" && React.createElement("div", { className: "space-y-4" },
+        React.createElement("div", { className: "flex justify-end" },
+          React.createElement("button", {
+            onClick: () => compartilharImagem("Tabela de Classificacao"),
+            className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg transition"
+          }, "📸 Compartilhar Tabela (WhatsApp)")
+        ),
+        React.createElement("div", { ref: shareCardRef, className: "bg-slate-950 p-2 rounded-xl" },
+          React.createElement("div", { className: "text-center mb-3 pb-2 border-b border-slate-800" },
+            React.createElement("h2", { className: "text-xs font-black uppercase text-lime-400 tracking-wider" }, data.config.nomeLiga),
+            React.createElement("p", { className: "text-[10px] text-slate-400" }, "Classificação Atualizada")
+          ),
+          React.createElement(ClassTable, { rows: classGeral, posicoesAnteriores })
+        )
+      ),
 
-      tab === "confrontos" && React.createElement("div", null,
-        React.createElement("div", { className: "flex gap-1 overflow-x-auto mb-4 pb-1" },
+      tab === "confrontos" && React.createElement("div", { className: "space-y-4" },
+        React.createElement("div", { className: "flex gap-1 overflow-x-auto pb-1" },
           rodadas.map((r) => React.createElement("button", {
             key: r,
             onClick: () => setRodadaSel(r),
             className: `px-2.5 py-1 rounded text-xs font-bold ${rodadaSel === r ? "bg-lime-500 text-slate-950" : "bg-slate-800 text-slate-400"}`
           }, "R" + r))
         ),
-        React.createElement(FixturesList, {
-          fixtures: fixturesRodada,
-          teams: data.teams,
-          pontuacoes,
-          config: data.config,
-          isAdmin,
-          onScoreTeam: setPontuacaoTime
-        })
+        React.createElement("div", { className: "flex justify-end" },
+          React.createElement("button", {
+            onClick: () => compartilharImagem(`Confrontos Rodada ${rodadaSel}`),
+            className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg transition"
+          }, `📸 Compartilhar Rodada ${rodadaSel} (WhatsApp)`)
+        ),
+        React.createElement("div", { ref: shareCardRef, className: "bg-slate-950 p-3 rounded-xl space-y-2" },
+          React.createElement("div", { className: "text-center mb-2 pb-2 border-b border-slate-800" },
+            React.createElement("h2", { className: "text-xs font-black uppercase text-lime-400 tracking-wider" }, data.config.nomeLiga),
+            React.createElement("p", { className: "text-xs font-bold text-slate-200" }, `Confrontos da Rodada ${rodadaSel}`)
+          ),
+          React.createElement(FixturesList, {
+            fixtures: fixturesRodada,
+            teams: data.teams,
+            pontuacoes,
+            config: data.config,
+            isAdmin,
+            onScoreTeam: setPontuacaoTime
+          })
+        )
+      ),
+
+      tab === "mitos" && React.createElement("div", { className: "space-y-4" },
+        React.createElement("div", { className: "bg-slate-800 border border-slate-700 rounded-lg p-4" },
+          React.createElement("h2", { className: "text-xs font-black uppercase tracking-widest text-amber-400 mb-2" }, "⭐ Mito do 1º Turno"),
+          React.createElement("p", { className: "text-lg font-bold text-slate-50" }, MITO_1T.time),
+          React.createElement("p", { className: "text-sm text-slate-400" }, fmt(MITO_1T.pontos) + " pts · Rodada " + MITO_1T.rodada),
+          React.createElement("p", { className: "text-xs text-emerald-400 mt-1" }, "Prêmio: R$ 100,00")
+        ),
+        React.createElement("div", { className: "bg-slate-800 border border-slate-700 rounded-lg p-4" },
+          React.createElement("h2", { className: "text-xs font-black uppercase tracking-widest text-amber-400 mb-2" }, "⭐ Mito do 2º Turno"),
+          React.createElement("p", { className: "text-lg font-bold text-slate-50" }, mito2T.time),
+          React.createElement("p", { className: "text-sm text-slate-400" }, fmt(mito2T.pontos) + " pts · Rodada " + mito2T.rodada),
+          React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "Atualiza com as parciais das rodadas 24–38"),
+          React.createElement("p", { className: "text-xs text-emerald-400 mt-1" }, "Prêmio: R$ 100,00")
+        ),
+        React.createElement("div", { className: "bg-slate-800 border border-slate-700 rounded-lg p-4 text-xs text-slate-400 space-y-1" },
+          React.createElement("p", { className: "font-bold text-slate-300 uppercase tracking-wider mb-2" }, "Premiação G4"),
+          React.createElement("p", null, "1º lugar — R$ 670"),
+          React.createElement("p", null, "2º lugar — R$ 350"),
+          React.createElement("p", null, "3º lugar — R$ 250"),
+          React.createElement("p", null, "4º lugar — R$ 150"),
+          React.createElement("p", { className: "mt-2" }, "RV (melhor da rodada) — R$ 10 por rodada")
+        )
       ),
 
       tab === "times" && React.createElement("div", { className: "grid sm:grid-cols-2 gap-2" },
@@ -614,15 +624,15 @@ function FixturesList({ fixtures, teams, pontuacoes, config, isAdmin, onScoreTea
       const corB = res === "B" ? "text-emerald-400" : res === "A" ? "text-red-400" : res === "empate" ? "text-yellow-300" : "text-slate-200";
       return React.createElement("div", {
         key: f.id,
-        className: "flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-3"
+        className: "flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-3"
       },
         React.createElement("span", { className: `flex-1 text-sm font-semibold text-right ${corA}` }, nome(f.timeA)),
         isAdmin
-          ? React.createElement("input", { type: "number", step: "0.01", value: ptsA ?? "", onChange: (e) => onScoreTeam(f.rodada, f.timeA, e.target.value), className: "w-16 bg-slate-900 border border-slate-700 rounded text-center py-1 font-mono text-sm", placeholder: "—" })
+          ? React.createElement("input", { type: "number", step: "0.01", value: ptsA ?? "", onChange: (e) => onScoreTeam(f.rodada, f.timeA, e.target.value), className: "w-16 bg-slate-950 border border-slate-700 rounded text-center py-1 font-mono text-sm", placeholder: "—" })
           : React.createElement("span", { className: "w-16 text-center font-mono font-bold text-sm" }, ptsA != null ? fmt(ptsA) : "—"),
         React.createElement("span", { className: "text-slate-400 text-xs" }, res === "empate" ? "≈" : "x"),
         isAdmin
-          ? React.createElement("input", { type: "number", step: "0.01", value: ptsB ?? "", onChange: (e) => onScoreTeam(f.rodada, f.timeB, e.target.value), className: "w-16 bg-slate-900 border border-slate-700 rounded text-center py-1 font-mono text-sm", placeholder: "—" })
+          ? React.createElement("input", { type: "number", step: "0.01", value: ptsB ?? "", onChange: (e) => onScoreTeam(f.rodada, f.timeB, e.target.value), className: "w-16 bg-slate-950 border border-slate-700 rounded text-center py-1 font-mono text-sm", placeholder: "—" })
           : React.createElement("span", { className: "w-16 text-center font-mono font-bold text-sm" }, ptsB != null ? fmt(ptsB) : "—"),
         React.createElement("span", { className: `flex-1 text-sm font-semibold ${corB}` }, nome(f.timeB))
       );
