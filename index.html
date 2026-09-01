@@ -32,6 +32,74 @@ const { useState, useEffect, useMemo, useCallback } = React;
 // ============================================================
 const FIREBASE_URL = "https://liga-cartoleiro-3-pontos-default-rtdb.firebaseio.com";
 
+// Calendário oficial (Brasileirão 2026) — fuso Brasília
+// Regra: durante a rodada OU até 1 dia após o fim → mostra essa rodada
+// No dia seguinte ao "dia de graça" → avança para a próxima
+const CALENDARIO_LIGA = [
+  { rodada: 23, inicio: "2026-08-15", fim: "2026-08-18" },
+  { rodada: 24, inicio: "2026-08-22", fim: "2026-08-23" },
+  { rodada: 25, inicio: "2026-08-29", fim: "2026-08-31" },
+  { rodada: 26, inicio: "2026-09-05", fim: "2026-09-07" },
+  { rodada: 27, inicio: "2026-09-12", fim: "2026-09-14" },
+  { rodada: 28, inicio: "2026-09-19", fim: "2026-09-21" },
+  { rodada: 29, inicio: "2026-09-26", fim: "2026-10-08" },
+  { rodada: 30, inicio: "2026-10-09", fim: "2026-10-13" },
+  { rodada: 31, inicio: "2026-10-14", fim: "2026-10-20" },
+  { rodada: 32, inicio: "2026-10-21", fim: "2026-10-27" },
+  { rodada: 33, inicio: "2026-10-28", fim: "2026-11-02" },
+  { rodada: 34, inicio: "2026-11-03", fim: "2026-11-09" },
+  { rodada: 35, inicio: "2026-11-10", fim: "2026-11-20" },
+  { rodada: 36, inicio: "2026-11-21", fim: "2026-11-27" },
+  { rodada: 37, inicio: "2026-11-28", fim: "2026-12-04" },
+  { rodada: 38, inicio: "2026-12-05", fim: "2026-12-12" },
+];
+
+function dataBrasilHoje() {
+  // YYYY-MM-DD no fuso de Brasília
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  });
+  return fmt.format(new Date()); // en-CA → YYYY-MM-DD
+}
+
+function addDias(yyyyMmDd, dias) {
+  const [y, m, d] = yyyyMmDd.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + dias);
+  return dt.toISOString().slice(0, 10);
+}
+
+/** Rodada vigente: ativa OU até 1 dia após o fim; depois sobe para a próxima */
+function rodadaVigente() {
+  const hoje = dataBrasilHoje();
+  let ultimaComGraca = null;
+  let proxima = null;
+
+  for (let i = 0; i < CALENDARIO_LIGA.length; i++) {
+    const r = CALENDARIO_LIGA[i];
+    const gracaAte = addDias(r.fim, 1); // mantém a rodada no dia seguinte ao fim
+
+    if (hoje >= r.inicio && hoje <= gracaAte) {
+      return r.rodada;
+    }
+    if (hoje > gracaAte) {
+      ultimaComGraca = r.rodada;
+    }
+    if (hoje < r.inicio && proxima === null) {
+      proxima = r.rodada;
+    }
+  }
+
+  // Entre rodadas (já passou a graça da anterior): mostra a próxima
+  if (proxima !== null) return proxima;
+  // Depois da última
+  if (ultimaComGraca !== null) return ultimaComGraca;
+  return 25;
+}
+
+
+
 const uid = () => Math.random().toString(36).slice(2, 10);
 const fmt = (n) => (n === null || n === undefined ? n : Math.round(n * 100) / 100);
 
@@ -402,16 +470,16 @@ const PONTUACOES_HIST = {"1": {"5709128": 54.9, "4749372": 60.76, "49413477": 61
 
 const FIXTURES_R23_A_R38 = {
   23: [
+    ["DBMC FC", "Kartólattra SCCP"],
+    ["Impondo F.C", "1/2 Boca Juniors SPFC"],
+    ["Vemkivem", "BarçaSampaSP"],
+    ["Mcdonald Soccer", "Real Mauadri"],
     ["theo bernardes2016sa", "SC Mercenário"],
     ["Doutromundo e-sports", "Ayrton Senna Eterno F. C."],
     ["SAF VK Phone", "Não Ynteressa FC"],
-    ["Vemkivem", "BarçaSampaSP"],
-    ["SEP PALMEIRAS 19I4", "FC Speed Galatico"],
-    ["Mcdonald Soccer", "Real Mauadri"],
-    ["Impondo F.C", "1/2 Boca Juniors SPFC"],
-    ["DBMC FC", "Kartólattra SCCP"],
-    ["S.E.P ArmageBambi", "Ivan Camisa 10"],
     ["SilvanoLBraga FC", "SimasturboF.C"],
+    ["S.E.P ArmageBambi", "Ivan Camisa 10"],
+    ["SEP PALMEIRAS 19I4", "FC Speed Galatico"]
   ],
   24: [
     ["Ayrton Senna Eterno F. C.", "SEP PALMEIRAS 19I4"],
@@ -423,177 +491,181 @@ const FIXTURES_R23_A_R38 = {
     ["theo bernardes2016sa", "1/2 Boca Juniors SPFC"],
     ["SC Mercenário", "Doutromundo e-sports"],
     ["SilvanoLBraga FC", "SAF VK Phone"],
-    ["Kartólattra SCCP", "Real Mauadri"],
+    ["Kartólattra SCCP", "Real Mauadri"]
   ],
   25: [
-    ["FC Speed Galatico", "Ivan Camisa 10"],
-    ["Doutromundo e-sports", "SimasturboF.C"],
-    ["SAF VK Phone", "Kartólattra SCCP"],
-    ["Vemkivem", "Ayrton Senna Eterno F. C."],
-    ["SEP PALMEIRAS 19I4", "SC Mercenário"],
     ["Mcdonald Soccer", "S.E.P ArmageBambi"],
-    ["Real Mauadri", "SilvanoLBraga FC"],
+    ["FC Speed Galatico", "Ivan Camisa 10"],
     ["DBMC FC", "theo bernardes2016sa"],
-    ["BarçaSampaSP", "Impondo F.C"],
+    ["Vemkivem", "Ayrton Senna Eterno F. C."],
+    ["SimasturboF.C", "Impondo F.C"],
+    ["SEP PALMEIRAS 19I4", "SC Mercenário"],
     ["1/2 Boca Juniors SPFC", "Não Ynteressa FC"],
+    ["SAF VK Phone", "Kartólattra SCCP"],
+    ["Doutromundo e-sports", "BarçaSampaSP"],
+    ["Real Mauadri", "SilvanoLBraga FC"]
   ],
   26: [
-    ["theo bernardes2016sa", "Doutromundo e-sports"],
     ["Ivan Camisa 10", "SC Mercenário"],
-    ["SAF VK Phone", "Mcdonald Soccer"],
-    ["Vemkivem", "SilvanoLBraga FC"],
-    ["Kartólattra SCCP", "BarçaSampaSP"],
-    ["SimasturboF.C", "DBMC FC"],
-    ["Impondo F.C", "Ayrton Senna Eterno F. C."],
+    ["Kartólattra SCCP", "SimasturboF.C"],
+    ["BarçaSampaSP", "DBMC FC"],
     ["Não Ynteressa FC", "SEP PALMEIRAS 19I4"],
+    ["SAF VK Phone", "Mcdonald Soccer"],
+    ["theo bernardes2016sa", "Doutromundo e-sports"],
+    ["Impondo F.C", "Ayrton Senna Eterno F. C."],
     ["S.E.P ArmageBambi", "Real Mauadri"],
     ["1/2 Boca Juniors SPFC", "FC Speed Galatico"],
+    ["Vemkivem", "SilvanoLBraga FC"]
   ],
   27: [
-    ["FC Speed Galatico", "Vemkivem"],
     ["Ivan Camisa 10", "Kartólattra SCCP"],
-    ["Ayrton Senna Eterno F. C.", "SimasturboF.C"],
-    ["SC Mercenário", "SAF VK Phone"],
-    ["SEP PALMEIRAS 19I4", "S.E.P ArmageBambi"],
     ["Mcdonald Soccer", "theo bernardes2016sa"],
+    ["SC Mercenário", "SAF VK Phone"],
     ["Real Mauadri", "Doutromundo e-sports"],
+    ["Ayrton Senna Eterno F. C.", "BarçaSampaSP"],
     ["Não Ynteressa FC", "DBMC FC"],
-    ["BarçaSampaSP", "1/2 Boca Juniors SPFC"],
+    ["SimasturboF.C", "1/2 Boca Juniors SPFC"],
     ["SilvanoLBraga FC", "Impondo F.C"],
+    ["SEP PALMEIRAS 19I4", "S.E.P ArmageBambi"],
+    ["FC Speed Galatico", "Vemkivem"]
   ],
   28: [
-    ["FC Speed Galatico", "Kartólattra SCCP"],
-    ["Doutromundo e-sports", "Não Ynteressa FC"],
-    ["SAF VK Phone", "Impondo F.C"],
-    ["Vemkivem", "theo bernardes2016sa"],
     ["SEP PALMEIRAS 19I4", "Ivan Camisa 10"],
+    ["SAF VK Phone", "Impondo F.C"],
+    ["S.E.P ArmageBambi", "BarçaSampaSP"],
+    ["DBMC FC", "SimasturboF.C"],
+    ["Doutromundo e-sports", "Não Ynteressa FC"],
+    ["Vemkivem", "theo bernardes2016sa"],
+    ["1/2 Boca Juniors SPFC", "Ayrton Senna Eterno F. C."],
     ["Mcdonald Soccer", "SilvanoLBraga FC"],
     ["Real Mauadri", "SC Mercenário"],
-    ["DBMC FC", "BarçaSampaSP"],
-    ["S.E.P ArmageBambi", "SimasturboF.C"],
-    ["1/2 Boca Juniors SPFC", "Ayrton Senna Eterno F. C."],
+    ["FC Speed Galatico", "Kartólattra SCCP"]
   ],
   29: [
+    ["BarçaSampaSP", "SAF VK Phone"],
     ["theo bernardes2016sa", "Não Ynteressa FC"],
     ["Ivan Camisa 10", "Doutromundo e-sports"],
-    ["Ayrton Senna Eterno F. C.", "FC Speed Galatico"],
-    ["SC Mercenário", "BarçaSampaSP"],
-    ["Kartólattra SCCP", "SEP PALMEIRAS 19I4"],
-    ["SimasturboF.C", "SAF VK Phone"],
-    ["Impondo F.C", "Vemkivem"],
-    ["DBMC FC", "Mcdonald Soccer"],
     ["S.E.P ArmageBambi", "SilvanoLBraga FC"],
-    ["1/2 Boca Juniors SPFC", "Real Mauadri"],
+    ["Ayrton Senna Eterno F. C.", "FC Speed Galatico"],
+    ["DBMC FC", "Mcdonald Soccer"],
+    ["Impondo F.C", "Vemkivem"],
+    ["SC Mercenário", "SimasturboF.C"],
+    ["Kartólattra SCCP", "SEP PALMEIRAS 19I4"],
+    ["1/2 Boca Juniors SPFC", "Real Mauadri"]
   ],
   30: [
-    ["FC Speed Galatico", "theo bernardes2016sa"],
-    ["Doutromundo e-sports", "1/2 Boca Juniors SPFC"],
     ["SAF VK Phone", "S.E.P ArmageBambi"],
-    ["SC Mercenário", "Vemkivem"],
-    ["Kartólattra SCCP", "SimasturboF.C"],
+    ["Doutromundo e-sports", "1/2 Boca Juniors SPFC"],
+    ["SimasturboF.C", "SEP PALMEIRAS 19I4"],
     ["Mcdonald Soccer", "Ayrton Senna Eterno F. C."],
     ["Real Mauadri", "Impondo F.C"],
-    ["Não Ynteressa FC", "Ivan Camisa 10"],
-    ["BarçaSampaSP", "SEP PALMEIRAS 19I4"],
     ["SilvanoLBraga FC", "DBMC FC"],
+    ["Não Ynteressa FC", "Ivan Camisa 10"],
+    ["FC Speed Galatico", "theo bernardes2016sa"],
+    ["SC Mercenário", "Vemkivem"],
+    ["BarçaSampaSP", "Kartólattra SCCP"]
   ],
   31: [
-    ["theo bernardes2016sa", "Ayrton Senna Eterno F. C."],
-    ["Ivan Camisa 10", "SilvanoLBraga FC"],
     ["SAF VK Phone", "Doutromundo e-sports"],
+    ["Ivan Camisa 10", "SilvanoLBraga FC"],
     ["Vemkivem", "S.E.P ArmageBambi"],
+    ["Real Mauadri", "BarçaSampaSP"],
     ["SEP PALMEIRAS 19I4", "Impondo F.C"],
+    ["theo bernardes2016sa", "Ayrton Senna Eterno F. C."],
     ["Mcdonald Soccer", "Não Ynteressa FC"],
-    ["Real Mauadri", "SimasturboF.C"],
     ["DBMC FC", "SC Mercenário"],
-    ["BarçaSampaSP", "FC Speed Galatico"],
     ["1/2 Boca Juniors SPFC", "Kartólattra SCCP"],
+    ["FC Speed Galatico", "SimasturboF.C"]
   ],
   32: [
-    ["FC Speed Galatico", "Mcdonald Soccer"],
-    ["Doutromundo e-sports", "Vemkivem"],
-    ["Ayrton Senna Eterno F. C.", "BarçaSampaSP"],
-    ["SC Mercenário", "Kartólattra SCCP"],
-    ["SEP PALMEIRAS 19I4", "SAF VK Phone"],
-    ["SimasturboF.C", "1/2 Boca Juniors SPFC"],
     ["Impondo F.C", "Ivan Camisa 10"],
+    ["Ayrton Senna Eterno F. C.", "SimasturboF.C"],
+    ["BarçaSampaSP", "1/2 Boca Juniors SPFC"],
+    ["SEP PALMEIRAS 19I4", "SAF VK Phone"],
+    ["Doutromundo e-sports", "Vemkivem"],
     ["Não Ynteressa FC", "Real Mauadri"],
+    ["SC Mercenário", "Kartólattra SCCP"],
     ["S.E.P ArmageBambi", "DBMC FC"],
     ["SilvanoLBraga FC", "theo bernardes2016sa"],
+    ["FC Speed Galatico", "Mcdonald Soccer"]
   ],
   33: [
-    ["theo bernardes2016sa", "Impondo F.C"],
-    ["Doutromundo e-sports", "FC Speed Galatico"],
-    ["Ayrton Senna Eterno F. C.", "SC Mercenário"],
-    ["Vemkivem", "SEP PALMEIRAS 19I4"],
-    ["Kartólattra SCCP", "SilvanoLBraga FC"],
-    ["Mcdonald Soccer", "SimasturboF.C"],
-    ["Real Mauadri", "DBMC FC"],
-    ["Não Ynteressa FC", "S.E.P ArmageBambi"],
-    ["BarçaSampaSP", "SAF VK Phone"],
     ["1/2 Boca Juniors SPFC", "Ivan Camisa 10"],
+    ["Ayrton Senna Eterno F. C.", "SC Mercenário"],
+    ["Não Ynteressa FC", "S.E.P ArmageBambi"],
+    ["Real Mauadri", "DBMC FC"],
+    ["Mcdonald Soccer", "BarçaSampaSP"],
+    ["Doutromundo e-sports", "FC Speed Galatico"],
+    ["SimasturboF.C", "SAF VK Phone"],
+    ["theo bernardes2016sa", "Impondo F.C"],
+    ["Kartólattra SCCP", "SilvanoLBraga FC"],
+    ["SEP PALMEIRAS 19I4", "Vemkivem"]
   ],
   34: [
-    ["FC Speed Galatico", "Real Mauadri"],
+    ["Impondo F.C", "Não Ynteressa FC"],
+    ["S.E.P ArmageBambi", "theo bernardes2016sa"],
+    ["BarçaSampaSP", "SimasturboF.C"],
     ["Ivan Camisa 10", "Mcdonald Soccer"],
-    ["SAF VK Phone", "Vemkivem"],
     ["SC Mercenário", "1/2 Boca Juniors SPFC"],
     ["Kartólattra SCCP", "Ayrton Senna Eterno F. C."],
-    ["SimasturboF.C", "BarçaSampaSP"],
-    ["Impondo F.C", "Não Ynteressa FC"],
-    ["DBMC FC", "Doutromundo e-sports"],
-    ["S.E.P ArmageBambi", "theo bernardes2016sa"],
+    ["SAF VK Phone", "Vemkivem"],
     ["SilvanoLBraga FC", "SEP PALMEIRAS 19I4"],
+    ["FC Speed Galatico", "Real Mauadri"],
+    ["DBMC FC", "Doutromundo e-sports"]
   ],
   35: [
-    ["FC Speed Galatico", "DBMC FC"],
+    ["SEP PALMEIRAS 19I4", "Mcdonald Soccer"],
     ["Doutromundo e-sports", "Impondo F.C"],
     ["SAF VK Phone", "theo bernardes2016sa"],
-    ["Vemkivem", "Ivan Camisa 10"],
-    ["SEP PALMEIRAS 19I4", "Mcdonald Soccer"],
-    ["SimasturboF.C", "SC Mercenário"],
-    ["Real Mauadri", "BarçaSampaSP"],
+    ["BarçaSampaSP", "SC Mercenário"],
     ["Não Ynteressa FC", "Ayrton Senna Eterno F. C."],
+    ["Vemkivem", "Ivan Camisa 10"],
+    ["Real Mauadri", "SimasturboF.C"],
     ["S.E.P ArmageBambi", "Kartólattra SCCP"],
     ["1/2 Boca Juniors SPFC", "SilvanoLBraga FC"],
+    ["DBMC FC", "FC Speed Galatico"]
   ],
   36: [
-    ["theo bernardes2016sa", "SEP PALMEIRAS 19I4"],
     ["Ivan Camisa 10", "SAF VK Phone"],
+    ["Impondo F.C", "S.E.P ArmageBambi"],
+    ["theo bernardes2016sa", "SEP PALMEIRAS 19I4"],
     ["Ayrton Senna Eterno F. C.", "Real Mauadri"],
     ["SC Mercenário", "FC Speed Galatico"],
-    ["Kartólattra SCCP", "Doutromundo e-sports"],
-    ["Mcdonald Soccer", "Vemkivem"],
-    ["Impondo F.C", "S.E.P ArmageBambi"],
+    ["SilvanoLBraga FC", "BarçaSampaSP"],
     ["DBMC FC", "1/2 Boca Juniors SPFC"],
-    ["BarçaSampaSP", "Não Ynteressa FC"],
-    ["SilvanoLBraga FC", "SimasturboF.C"],
+    ["Mcdonald Soccer", "Vemkivem"],
+    ["Kartólattra SCCP", "Doutromundo e-sports"],
+    ["Não Ynteressa FC", "SimasturboF.C"]
   ],
   37: [
-    ["theo bernardes2016sa", "SimasturboF.C"],
-    ["Ivan Camisa 10", "BarçaSampaSP"],
-    ["SAF VK Phone", "1/2 Boca Juniors SPFC"],
-    ["Vemkivem", "Real Mauadri"],
-    ["SEP PALMEIRAS 19I4", "DBMC FC"],
-    ["Mcdonald Soccer", "Doutromundo e-sports"],
-    ["Impondo F.C", "Kartólattra SCCP"],
     ["Não Ynteressa FC", "FC Speed Galatico"],
+    ["SEP PALMEIRAS 19I4", "DBMC FC"],
+    ["Vemkivem", "Real Mauadri"],
+    ["Ivan Camisa 10", "SimasturboF.C"],
     ["S.E.P ArmageBambi", "Ayrton Senna Eterno F. C."],
+    ["Impondo F.C", "Kartólattra SCCP"],
+    ["Mcdonald Soccer", "Doutromundo e-sports"],
     ["SilvanoLBraga FC", "SC Mercenário"],
+    ["theo bernardes2016sa", "BarçaSampaSP"],
+    ["1/2 Boca Juniors SPFC", "SAF VK Phone"]
   ],
   38: [
-    ["FC Speed Galatico", "SilvanoLBraga FC"],
-    ["Doutromundo e-sports", "S.E.P ArmageBambi"],
-    ["Ayrton Senna Eterno F. C.", "Ivan Camisa 10"],
-    ["SC Mercenário", "Não Ynteressa FC"],
-    ["Kartólattra SCCP", "theo bernardes2016sa"],
-    ["SimasturboF.C", "Impondo F.C"],
-    ["Real Mauadri", "SEP PALMEIRAS 19I4"],
     ["DBMC FC", "SAF VK Phone"],
-    ["BarçaSampaSP", "Mcdonald Soccer"],
     ["1/2 Boca Juniors SPFC", "Vemkivem"],
-  ],
+    ["SimasturboF.C", "Mcdonald Soccer"],
+    ["BarçaSampaSP", "Impondo F.C"],
+    ["SC Mercenário", "Não Ynteressa FC"],
+    ["FC Speed Galatico", "SilvanoLBraga FC"],
+    ["Kartólattra SCCP", "theo bernardes2016sa"],
+    ["Real Mauadri", "SEP PALMEIRAS 19I4"],
+    ["Doutromundo e-sports", "S.E.P ArmageBambi"],
+    ["Ayrton Senna Eterno F. C.", "Ivan Camisa 10"]
+  ]
 };
+
+
+
+
 
 const DEFAULT_CONFIG = {
   nomeLiga: "Liga Cartoleiro 3 Pontos 2026",
@@ -824,7 +896,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
-  const [rodadaSel, setRodadaSel] = useState(24);
+  const [rodadaSel, setRodadaSel] = useState(() => rodadaVigente());
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -852,8 +924,8 @@ function App() {
         }
         setPontuacoes(pts);
         setConnStatus("ok");
-        const maxR = rodadaMaisRecenteComDados(pts);
-        setRodadaSel(maxR >= 24 ? maxR : 24);
+        // Sempre abre na rodada vigente (calendário + 1 dia de graça)
+        setRodadaSel(rodadaVigente());
       } catch (e) {
         if (!cancelled) setConnStatus("error");
       }
